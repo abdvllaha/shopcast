@@ -34,7 +34,7 @@ export async function POST(request) {
       `
     })
     return Response.json({ success: true })
-  } catch (error: any) {
+} catch (error) {
     console.error('Email error:', error)
     return Response.json({ error: error.message }, { status: 500 })
   }
