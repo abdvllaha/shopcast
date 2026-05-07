@@ -4,7 +4,7 @@ import { createClient } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 
-const WEATHER_CODES = {
+const WEATHER_CODES: Record<number, string> = {
   0: '☀️ Clear', 1: '🌤️ Mainly Clear', 2: '⛅ Partly Cloudy', 3: '☁️ Overcast',
   45: '🌫️ Foggy', 48: '🌫️ Foggy', 51: '🌦️ Light Drizzle', 53: '🌦️ Drizzle',
   55: '🌧️ Heavy Drizzle', 61: '🌧️ Light Rain', 63: '🌧️ Rain', 65: '🌧️ Heavy Rain',
@@ -15,9 +15,9 @@ const WEATHER_CODES = {
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function Dashboard() {
-  const [store, setStore] = useState(null)
-  const [weather, setWeather] = useState(null)
-  const [events, setEvents] = useState([])
+  const [store, setStore] = useState<any>(null)
+  const [weather, setWeather] = useState<any>(null)
+  const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [prediction, setPrediction] = useState('')
@@ -33,7 +33,7 @@ export default function Dashboard() {
         const supabase = createClient()
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { router.push('/login'); return }
-        setUserEmail(session.user.email)
+        setUserEmail(session.user.email ?? '')
         const { data: stores, error: storeError } = await supabase
           .from('stores').select('*').eq('user_id', session.user.id).single()
         if (storeError || !stores) { router.push('/setup'); return }
@@ -69,7 +69,7 @@ export default function Dashboard() {
       } else {
         setPrediction(data.prediction)
       }
-    } catch (err) {
+    } catch (err: any) {
       setPrediction('Error: ' + err.message)
     }
     setPredicting(false)
@@ -115,7 +115,6 @@ export default function Dashboard() {
     <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-6">
       <div className="max-w-5xl mx-auto">
 
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-white text-2xl font-bold">ShopCast</h1>
@@ -127,11 +126,10 @@ export default function Dashboard() {
           >Sign out</button>
         </div>
 
-        {/* Weather */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
           <h2 className="text-white font-bold text-lg mb-4">📅 7-Day Weather Forecast</h2>
           <div className="grid grid-cols-7 gap-2">
-            {weather?.daily?.time?.map((date, i) => {
+            {weather?.daily?.time?.map((date: string, i: number) => {
               const day = new Date(date)
               const code = weather.daily.weathercode[i]
               const max = Math.round(weather.daily.temperature_2m_max[i])
@@ -150,14 +148,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Events */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
           <h2 className="text-white font-bold text-lg mb-4">🎪 Upcoming Local Events</h2>
           {events.length === 0 ? (
             <p className="text-blue-200">No upcoming events found in {store?.city}</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {events.map((event, i) => (
+              {events.map((event: any, i: number) => (
                 <div key={i} className="bg-white/10 rounded-xl p-4 flex justify-between items-center">
                   <div>
                     <p className="text-white font-medium">{event.name}</p>
@@ -173,7 +170,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* AI Prediction */}
         <div className="bg-white/10 rounded-2xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-white font-bold text-lg">🤖 AI Traffic Prediction</h2>
