@@ -183,13 +183,7 @@ export default function Dashboard() {
           </div>
           {prediction ? (
             <>
-              <div className="prose prose-invert max-w-none text-blue-100 
-                prose-headings:text-white prose-headings:font-bold 
-                prose-strong:text-white prose-p:text-blue-100 
-                prose-li:text-blue-100 prose-table:text-blue-100
-                prose-th:text-white prose-td:text-blue-200
-                prose-th:border prose-th:border-white/20 prose-th:p-2
-                prose-td:border prose-td:border-white/20 prose-td:p-2">
+              <div className="prose prose-invert max-w-none text-blue-100 prose-headings:text-white prose-headings:font-bold prose-strong:text-white prose-p:text-blue-100 prose-li:text-blue-100">
                 <ReactMarkdown>{prediction}</ReactMarkdown>
               </div>
               <div className="flex gap-3 pt-4 mt-4 border-t border-white/20">
