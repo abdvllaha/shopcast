@@ -120,10 +120,16 @@ export default function Dashboard() {
             <h1 className="text-white text-2xl font-bold">ShopCast</h1>
             <p className="text-blue-200">{store?.store_name} · {store?.city}</p>
           </div>
-          <button
-            onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); router.push('/') }}
-            className="text-blue-200 hover:text-white transition text-sm"
-          >Sign out</button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/settings')}
+              className="text-blue-200 hover:text-white transition text-sm"
+            >⚙️ Settings</button>
+            <button
+              onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); router.push('/') }}
+              className="text-blue-200 hover:text-white transition text-sm"
+            >Sign out</button>
+          </div>
         </div>
 
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
