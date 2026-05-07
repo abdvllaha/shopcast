@@ -183,9 +183,22 @@ export default function Dashboard() {
           </div>
           {prediction ? (
             <>
-              <div className="prose prose-invert max-w-none text-blue-100 prose-headings:text-white prose-headings:font-bold prose-strong:text-white prose-p:text-blue-100 prose-li:text-blue-100">
-                <ReactMarkdown>{prediction}</ReactMarkdown>
-              </div>
+<div className="text-blue-100 leading-relaxed space-y-2">
+  <ReactMarkdown components={{
+    h1: ({children}) => <h1 className="text-white text-xl font-bold mt-4 mb-2">{children}</h1>,
+    h2: ({children}) => <h2 className="text-white text-lg font-bold mt-4 mb-2">{children}</h2>,
+    h3: ({children}) => <h3 className="text-white font-bold mt-3 mb-1">{children}</h3>,
+    strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+    p: ({children}) => <p className="text-blue-100 mb-2">{children}</p>,
+    li: ({children}) => <li className="text-blue-100 ml-4 list-disc">{children}</li>,
+    ul: ({children}) => <ul className="mb-3 space-y-1">{children}</ul>,
+    ol: ({children}) => <ol className="mb-3 space-y-1 list-decimal ml-4">{children}</ol>,
+    table: ({children}) => <table className="w-full border-collapse mb-3">{children}</table>,
+    th: ({children}) => <th className="text-white font-bold border border-white/20 p-2 text-left bg-white/10">{children}</th>,
+    td: ({children}) => <td className="text-blue-200 border border-white/20 p-2">{children}</td>,
+    hr: () => <hr className="border-white/20 my-3" />,
+  }}>{prediction}</ReactMarkdown>
+</div>
               <div className="flex gap-3 pt-4 mt-4 border-t border-white/20">
                 <button
                   onClick={sendEmail}
