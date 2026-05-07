@@ -3,19 +3,6 @@ import { useState } from 'react'
 import { createClient } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
 
-const STORE_TYPES = [
-  'Boutique / Clothing',
-  'Coffee Shop / Cafe',
-  'Restaurant / Food',
-  'Grocery / Convenience',
-  'Beauty / Salon',
-  'Bookstore',
-  'Gift Shop',
-  'Electronics',
-  'Sporting Goods',
-  'Other Retail'
-]
-
 export default function Setup() {
   const [storeName, setStoreName] = useState('')
   const [address, setAddress] = useState('')
@@ -97,17 +84,15 @@ export default function Setup() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Store Type</label>
-            <select
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Describe your store</label>
+            <textarea
               value={storeType}
               onChange={e => setStoreType(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select your store type</option>
-              {STORE_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="e.g. Women's clothing boutique focused on local designers, sizes 0-20"
+            />
+            <p className="text-xs text-gray-400 mt-1">The more detail you give, the better your predictions will be</p>
           </div>
 
           <button
