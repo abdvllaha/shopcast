@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
 
