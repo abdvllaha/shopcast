@@ -38,7 +38,7 @@ After searching, respond with ONLY this JSON object and nothing else:
       ?.map(b => b.text)
       ?.join('') || ''
 
-    const jsonMatch = allText.match(/\{[\s\S]*?\}/)
+    const jsonMatch = allText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return Response.json({ error: 'Could not get demographics' }, { status: 500 })
     }
