@@ -4,17 +4,25 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
 
+  if (!userId) {
+    return Response.json({ message: 'No user ID provided' })
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   )
 
-  const { data: logs } = await supabase
+  const { data: logs, error } = await supabase
     .from('traffic_logs')
     .select('*')
     .eq('user_id', userId)
     .order('log_date', { ascending: false })
     .limit(30)
+
+  if (error) {
+    return Response.json({ message: 'No data yet', error: error.message })
+  }
 
   if (!logs || logs.length === 0) {
     return Response.json({ message: 'No data yet' })
@@ -26,11 +34,11 @@ export async function GET(request) {
   const total = logs.length
 
   const busyDays = logs.filter(l => l.traffic_level === 'busy').map(l => {
-    const date = new Date(l.log_date)
+    const date = new Date(l.log_date + 'T12:00:00')
     return date.toLocaleDateString('en-US', { weekday: 'long' })
   })
 
-  const dayCount = {}
+  const dayCount: Record<string, number> = {}
   busyDays.forEach(day => { dayCount[day] = (dayCount[day] || 0) + 1 })
   const busiestDay = Object.entries(dayCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
 

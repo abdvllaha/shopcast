@@ -61,7 +61,8 @@ export default function Dashboard() {
           .limit(7)
         if (logs) setRecentLogs(logs)
         const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
-const perfData = await perfRes.json()
+        const perfData = await perfRes.json()
+        console.log('perfData:', perfData)
 if (perfData.total) setPerformance(perfData)
 
         const [weatherRes, eventsRes] = await Promise.all([
