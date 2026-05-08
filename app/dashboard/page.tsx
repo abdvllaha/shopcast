@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [performance, setPerformance] = useState<any>(null)
   const [salesHistory, setSalesHistory] = useState<any[]>([])
 const [roadTraffic, setRoadTraffic] = useState<any>(null)
+const [trends, setTrends] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -70,6 +71,9 @@ const [roadTraffic, setRoadTraffic] = useState<any>(null)
           .limit(365)
         if (sales) setSalesHistory(sales)
           const trafficRes = await fetch(`/api/road-traffic?address=${encodeURIComponent(stores.address)}&city=${encodeURIComponent(stores.city)}`)
+        const trendsRes = await fetch(`/api/trends?storeType=${encodeURIComponent(stores.store_type)}&city=${encodeURIComponent(stores.city)}`)
+        const trendsData = await trendsRes.json()
+        if (trendsData.summary) setTrends(trendsData)
         const trafficData = await trafficRes.json()
         if (trafficData.trafficLevel) setRoadTraffic(trafficData)
         const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
@@ -324,6 +328,44 @@ const [pastSaved, setPastSaved] = useState(false)
         {roadTraffic.trafficColor === 'red' && '🔴 Heavy traffic nearby — foot traffic may be lower until roads clear'}
       </p>
     </div>
+  </div>
+)}
+{/* Search Trends */}
+{trends && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <h2 className="text-white font-bold text-lg mb-4">📈 Local Search Demand</h2>
+    <div className="flex items-center gap-4 mb-4">
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl ${
+        trends.signal === 'high' ? 'bg-green-500' :
+        trends.signal === 'low' ? 'bg-red-500' : 'bg-yellow-500'
+      }`}>
+        {trends.emoji || '📊'}
+      </div>
+      <div>
+        <p className={`text-lg font-bold ${
+          trends.signal === 'high' ? 'text-green-400' :
+          trends.signal === 'low' ? 'text-red-400' : 'text-yellow-400'
+        }`}>
+          {trends.signal === 'high' ? '🔥 High Demand' :
+           trends.signal === 'low' ? '📉 Low Demand' : '📊 Normal Demand'}
+        </p>
+        <p className="text-blue-200 text-sm mt-1">{trends.summary}</p>
+      </div>
+    </div>
+    {trends.headlines && trends.headlines.length > 0 && (
+      <div className="mt-3">
+        <p className="text-blue-300 text-xs mb-2">Recent headlines:</p>
+        <div className="flex flex-col gap-2">
+          {trends.headlines.slice(0, 3).map((h: any, i: number) => (
+            <a key={i} href={h.link} target="_blank" rel="noopener noreferrer"
+              className="bg-white/10 rounded-lg p-3 hover:bg-white/20 transition">
+              <p className="text-white text-xs font-medium">{h.title}</p>
+              <p className="text-blue-300 text-xs mt-1 line-clamp-2">{h.snippet}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
 )}
         {/* Performance Report */}
