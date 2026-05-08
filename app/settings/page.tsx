@@ -129,7 +129,7 @@ export default function Settings() {
                 rows={4}
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
-              <p className="text-xs text-gray-400 mt-1">The more detail you give, the better your predictions will be</p>
+              <p className="text-xs text-gray-400 mt-1">💡 Tip: Include your typical customer, busiest days, average sale size, and how weather affects your store. e.g. "Women's clothing boutique, busy Fri-Sat, average sale $85, rain hurts foot traffic"</p>
             </div>
 
             <button
