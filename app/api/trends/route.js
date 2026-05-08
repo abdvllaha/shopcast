@@ -2,13 +2,13 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const storeType = searchParams.get('storeType')
   const city = searchParams.get('city')
-  const apiKey = process.env.NEWS_API_KEY
+  const apiKey = process.env.GNEWS_API_KEY
 
   try {
     const query = `${storeType} ${city} shopping retail`
     
     const res = await fetch(
-      `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=5&language=en&apiKey=${apiKey}`
+      `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=en&max=5&apikey=${apiKey}`
     )
     const data = await res.json()
 
