@@ -143,6 +143,9 @@ export default function Dashboard() {
     a.click()
   }
 const [showPastLog, setShowPastLog] = useState(false)
+const [showImport, setShowImport] = useState(false)
+const [importing, setImporting] = useState(false)
+const [importResult, setImportResult] = useState('')
 const [pastDate, setPastDate] = useState('')
 const [pastLevel, setPastLevel] = useState('')
 const [pastSaved, setPastSaved] = useState(false)
@@ -277,6 +280,72 @@ const [pastSaved, setPastSaved] = useState(false)
   )}
 </div>
         </div>
+        {/* CSV Import */}
+<div className="bg-white/10 rounded-2xl p-6 mb-6">
+  <div className="flex justify-between items-center">
+    <div>
+      <h2 className="text-white font-bold text-lg">📂 Import Walk-in Data</h2>
+      <p className="text-blue-300 text-sm mt-1">Upload a CSV with your historical walk-in counts</p>
+    </div>
+    <button
+      onClick={() => setShowImport(!showImport)}
+      className="bg-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-white/30 transition"
+    >
+      {showImport ? 'Hide' : 'Upload CSV'}
+    </button>
+  </div>
+
+  {showImport && (
+    <div className="mt-4">
+      <div className="bg-white/10 rounded-xl p-4 mb-4">
+        <p className="text-blue-200 text-sm font-medium mb-2">📋 Required CSV format:</p>
+        <code className="text-green-300 text-xs">
+          date,walkins<br/>
+          2026-05-01,23<br/>
+          2026-05-02,18<br/>
+          2026-05-03,31
+        </code>
+      </div>
+
+      <input
+        type="file"
+        accept=".csv"
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (!file) return
+          setImporting(true)
+          setImportResult('')
+
+          const csvText = await file.text()
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) return
+
+          const res = await fetch('/api/import-walkins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              csvText,
+              userId: session.user.id,
+              storeId: store.id
+            })
+          })
+          const data = await res.json()
+          if (data.success) {
+            setImportResult(`✅ Successfully imported ${data.imported} days of walk-in data!`)
+          } else {
+            setImportResult(`❌ Error: ${data.error}`)
+          }
+          setImporting(false)
+        }}
+        className="block w-full text-blue-200 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-blue-900 file:font-semibold hover:file:bg-blue-50 cursor-pointer"
+      />
+
+      {importing && <p className="text-blue-300 text-sm mt-3">Importing...</p>}
+      {importResult && <p className="text-blue-100 text-sm mt-3">{importResult}</p>}
+    </div>
+  )}
+</div>
 
         {/* Weather */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
