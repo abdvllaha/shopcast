@@ -12,11 +12,13 @@ export async function POST(request) {
     ? events.map(e => `${e.date}: ${e.name} at ${e.venue} (${e.type})`).join('\n')
     : 'No major events this week'
 
-
-
   const logsSummary = recentLogs && recentLogs.length > 0
     ? recentLogs.map(l => `${l.log_date}: ${l.traffic_level}`).join('\n')
     : 'No historical data yet'
+
+  const salesSummary = salesHistory && salesHistory.length > 0
+    ? salesHistory.map(s => `${s.sale_date}: $${s.revenue}`).join('\n')
+    : 'No previous sales data uploaded yet'
 
   const prompt = `You are ShopCast, an AI assistant for small retail stores. Analyze the following data and provide a complete weekly action plan.
 
@@ -30,15 +32,17 @@ ${weatherSummary}
 Upcoming Local Events:
 ${eventsSummary}
 
-Event Relevance Guidelines:
-${eventRelevanceNote}
+CRITICAL EVENT RELEVANCE RULES:
+- Only mention an event if it has a DIRECT, LOGICAL connection to this specific store type
+- Sports playoffs draw crowds TO the arena and AWAY from unrelated retail stores - do NOT cite these as traffic drivers unless the store sells sports merchandise
+- For furniture stores: relevant events are home shows, design expos, long weekends, stat holidays, moving season
+- If you cannot explain in one sentence WHY a specific event would make someone visit THIS type of store, do not mention it
 
 Recent Traffic History:
 ${logsSummary}
+
 Previous Year Sales Data:
-${salesHistory && salesHistory.length > 0 
-  ? salesHistory.map(s => `${s.sale_date}: $${s.revenue}`).join('\n')
-  : 'No previous sales data uploaded yet'}
+${salesSummary}
 
 Please provide the following sections:
 
