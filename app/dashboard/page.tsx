@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState('')
   const [todayLog, setTodayLog] = useState<string | null>(null)
   const [loggingTraffic, setLoggingTraffic] = useState(false)
-  const [recentLogs, setRecentLogs] = useState<any[]>([])
+  const [recentLogs, setRecentLogs] = useState<any[]>([])const [performance, setPerformance] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -58,7 +58,9 @@ export default function Dashboard() {
           .eq('user_id', session.user.id)
           .order('log_date', { ascending: false })
           .limit(7)
-        if (logs) setRecentLogs(logs)
+        if (logs) setRecentLogs(logs)const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
+const perfData = await perfRes.json()
+if (perfData.total) setPerformance(perfData)
 
         const [weatherRes, eventsRes] = await Promise.all([
           fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
@@ -280,6 +282,30 @@ const [pastSaved, setPastSaved] = useState(false)
   )}
 </div>
         </div>
+        {/* Performance Report */}
+{performance && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <h2 className="text-white font-bold text-lg mb-4">📊 Your Store Performance</h2>
+    <p className="text-blue-300 text-sm mb-4">Based on your last {performance.total} check-ins</p>
+    <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="bg-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-green-400">{performance.busyPct}%</p>
+        <p className="text-blue-200 text-sm mt-1">🟢 Busy Days</p>
+      </div>
+      <div className="bg-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-yellow-400">{performance.normalPct}%</p>
+        <p className="text-blue-200 text-sm mt-1">🟡 Normal Days</p>
+      </div>
+      <div className="bg-white/10 rounded-xl p-4 text-center">
+        <p className="text-3xl font-bold text-red-400">{performance.slowPct}%</p>
+        <p className="text-blue-200 text-sm mt-1">🔴 Slow Days</p>
+      </div>
+    </div>
+    <div className="bg-white/10 rounded-xl p-4">
+      <p className="text-blue-200 text-sm">📅 Your busiest day of the week: <strong className="text-white">{performance.busiestDay}</strong></p>
+    </div>
+  </div>
+)}
         {/* CSV Import */}
 <div className="bg-white/10 rounded-2xl p-6 mb-6">
   <div className="flex justify-between items-center">
