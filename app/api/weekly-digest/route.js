@@ -8,7 +8,7 @@ export async function GET(request) {
 
   const { data: stores } = await supabase
     .from('stores')
-    .select('*, auth_users:user_id(email)')
+    .select('*')
 
   if (!stores || stores.length === 0) {
     return Response.json({ message: 'No stores found' })
@@ -18,7 +18,8 @@ export async function GET(request) {
 
   for (const store of stores) {
     try {
-      const email = store.auth_users?.email
+      const { data: userData } = await supabase.auth.admin.getUserById(store.user_id)
+      const email = userData?.user?.email
       if (!email) continue
 
       const [weatherRes, eventsRes] = await Promise.all([
