@@ -142,7 +142,10 @@ export default function Dashboard() {
     a.download = `shopcast-forecast-${store.store_name.replace(/\s+/g, '-')}.txt`
     a.click()
   }
-
+const [showPastLog, setShowPastLog] = useState(false)
+const [pastDate, setPastDate] = useState('')
+const [pastLevel, setPastLevel] = useState('')
+const [pastSaved, setPastSaved] = useState(false)
   const TRAFFIC_LEVELS = [
     { level: 'slow', emoji: '🔴', label: 'Slow' },
     { level: 'normal', emoji: '🟡', label: 'Normal' },
@@ -219,6 +222,60 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          <div className="mt-4 pt-4 border-t border-white/20">
+  <button
+    onClick={() => setShowPastLog(!showPastLog)}
+    className="text-blue-300 hover:text-white text-sm transition"
+  >
+    {showPastLog ? '▲ Hide' : '▼ Log a past day'}
+  </button>
+  {showPastLog && (
+    <div className="mt-3 flex gap-3 items-center flex-wrap">
+      <input
+        type="date"
+        value={pastDate}
+        onChange={e => setPastDate(e.target.value)}
+        max={new Date().toISOString().split('T')[0]}
+        className="bg-white/10 text-white rounded-lg px-3 py-2 text-sm border border-white/20 focus:outline-none"
+      />
+      <select
+        value={pastLevel}
+        onChange={e => setPastLevel(e.target.value)}
+        className="bg-white/10 text-white rounded-lg px-3 py-2 text-sm border border-white/20 focus:outline-none"
+      >
+        <option value="">Select traffic level</option>
+        <option value="slow">🔴 Slow</option>
+        <option value="normal">🟡 Normal</option>
+        <option value="busy">🟢 Busy</option>
+      </select>
+      <button
+        onClick={async () => {
+          if (!pastDate || !pastLevel) return
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) return
+          await supabase.from('traffic_logs').upsert({
+            user_id: session.user.id,
+            store_id: store.id,
+            log_date: pastDate,
+            traffic_level: pastLevel
+          }, { onConflict: 'user_id,log_date' })
+          setPastSaved(true)
+          setTimeout(() => setPastSaved(false), 2000)
+          setRecentLogs(prev => {
+            const filtered = prev.filter(l => l.log_date !== pastDate)
+            return [...filtered, { log_date: pastDate, traffic_level: pastLevel }]
+              .sort((a, b) => b.log_date.localeCompare(a.log_date))
+              .slice(0, 7)
+          })
+        }}
+        className="bg-white text-blue-900 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition"
+      >
+        {pastSaved ? '✅ Saved!' : 'Save'}
+      </button>
+    </div>
+  )}
+</div>
         </div>
 
         {/* Weather */}
