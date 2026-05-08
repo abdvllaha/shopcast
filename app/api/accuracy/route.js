@@ -9,7 +9,6 @@ export async function GET(request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   )
 
-  // Get predictions and actual logs for the same dates
   const { data: predictions } = await supabase
     .from('predictions')
     .select('*')
@@ -28,7 +27,6 @@ export async function GET(request) {
     return Response.json({ message: 'Not enough data yet' })
   }
 
-  // Match predictions to actual logs
   const matches = []
   for (const prediction of predictions) {
     const actual = logs.find(l => l.log_date === prediction.prediction_date)
@@ -49,36 +47,37 @@ export async function GET(request) {
   const correct = matches.filter(m => m.correct).length
   const accuracy = Math.round((correct / matches.length) * 100)
 
-  return Response.json({
-    accuracy,
-    total: matches.length,
-    correct,
-    matches: matches.slice(0, 7)
-  })
+  return Response.json({ accuracy, total: matches.length, correct, matches: matches.slice(0, 7) })
 }
 
 export async function POST(request) {
-  const { userId, storeId, predictions } = await request.json()
+  try {
+    const { userId, storeId, predictions } = await request.json()
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
 
-  const rows = predictions.map(p => ({
-    user_id: userId,
-    store_id: storeId,
-    prediction_date: p.date,
-    predicted_level: p.level
-  }))
+    const rows = predictions.map(p => ({
+      user_id: userId,
+      store_id: storeId,
+      prediction_date: p.date,
+      predicted_level: p.level
+    }))
 
-  const { error } = await supabase
-    .from('predictions')
-    .upsert(rows, { onConflict: 'user_id,prediction_date' })
+    const { error } = await supabase
+      .from('predictions')
+      .upsert(rows, { onConflict: 'user_id,prediction_date' })
 
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('Accuracy save error:', error.message)
+      return Response.json({ error: error.message }, { status: 500 })
+    }
+
+    return Response.json({ success: true, saved: rows.length })
+  } catch (err) {
+    console.error('Accuracy POST error:', err.message)
+    return Response.json({ error: err.message }, { status: 500 })
   }
-
-  return Response.json({ success: true, saved: rows.length })
 }
