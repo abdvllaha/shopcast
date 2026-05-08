@@ -27,7 +27,8 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState('')
   const [todayLog, setTodayLog] = useState<string | null>(null)
   const [loggingTraffic, setLoggingTraffic] = useState(false)
-  const [recentLogs, setRecentLogs] = useState<any[]>([])const [performance, setPerformance] = useState<any>(null)
+  const [recentLogs, setRecentLogs] = useState<any[]>([])
+  const [performance, setPerformance] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
