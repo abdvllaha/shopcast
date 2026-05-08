@@ -25,6 +25,9 @@ export default function Dashboard() {
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const [todayLog, setTodayLog] = useState<string | null>(null)
+  const [loggingTraffic, setLoggingTraffic] = useState(false)
+  const [recentLogs, setRecentLogs] = useState<any[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -34,10 +37,29 @@ export default function Dashboard() {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { router.push('/login'); return }
         setUserEmail(session.user.email ?? '')
+
         const { data: stores, error: storeError } = await supabase
           .from('stores').select('*').eq('user_id', session.user.id).single()
         if (storeError || !stores) { router.push('/setup'); return }
         setStore(stores)
+
+        const today = new Date().toISOString().split('T')[0]
+        const { data: todayData } = await supabase
+          .from('traffic_logs')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('log_date', today)
+          .single()
+        if (todayData) setTodayLog(todayData.traffic_level)
+
+        const { data: logs } = await supabase
+          .from('traffic_logs')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('log_date', { ascending: false })
+          .limit(7)
+        if (logs) setRecentLogs(logs)
+
         const [weatherRes, eventsRes] = await Promise.all([
           fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
           fetch(`/api/events?city=${encodeURIComponent(stores.city)}`)
@@ -55,13 +77,35 @@ export default function Dashboard() {
     load()
   }, [])
 
+  const logTraffic = async (level: string) => {
+    setLoggingTraffic(true)
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    const today = new Date().toISOString().split('T')[0]
+    await supabase.from('traffic_logs').upsert({
+      user_id: session.user.id,
+      store_id: store.id,
+      log_date: today,
+      traffic_level: level
+    }, { onConflict: 'user_id,log_date' })
+
+    setTodayLog(level)
+    setRecentLogs(prev => {
+      const filtered = prev.filter(l => l.log_date !== today)
+      return [{ log_date: today, traffic_level: level }, ...filtered].slice(0, 7)
+    })
+    setLoggingTraffic(false)
+  }
+
   const getPrediction = async () => {
     setPredicting(true)
     try {
       const res = await fetch('/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store, weather, events })
+        body: JSON.stringify({ store, weather, events, recentLogs })
       })
       const data = await res.json()
       if (data.error) {
@@ -99,6 +143,12 @@ export default function Dashboard() {
     a.click()
   }
 
+  const TRAFFIC_LEVELS = [
+    { level: 'slow', emoji: '🔴', label: 'Slow' },
+    { level: 'normal', emoji: '🟡', label: 'Normal' },
+    { level: 'busy', emoji: '🟢', label: 'Busy' },
+  ]
+
   if (loading) return (
     <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center">
       <div className="text-white text-xl">Loading your forecast...</div>
@@ -132,6 +182,46 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Daily Check-in */}
+        <div className="bg-white/10 rounded-2xl p-6 mb-6">
+          <h2 className="text-white font-bold text-lg mb-2">📊 How busy was your store today?</h2>
+          <p className="text-blue-300 text-sm mb-4">Your check-ins help ShopCast learn your store's patterns over time</p>
+          <div className="flex gap-3">
+            {TRAFFIC_LEVELS.map(({ level, emoji, label }) => (
+              <button
+                key={level}
+                onClick={() => logTraffic(level)}
+                disabled={loggingTraffic}
+                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition ${
+                  todayLog === level
+                    ? 'bg-white text-blue-900 scale-105'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                {emoji} {label}
+              </button>
+            ))}
+          </div>
+          {todayLog && (
+            <p className="text-blue-300 text-sm mt-3">
+              ✅ Today logged as <strong className="text-white">{todayLog}</strong> — thanks! This improves your future predictions.
+            </p>
+          )}
+          {recentLogs.length > 0 && (
+            <div className="mt-4">
+              <p className="text-blue-300 text-xs mb-2">Recent check-ins:</p>
+              <div className="flex gap-2 flex-wrap">
+                {recentLogs.map((log, i) => (
+                  <div key={i} className="bg-white/10 rounded-lg px-3 py-1 text-xs text-blue-200">
+                    {log.log_date} — {log.traffic_level === 'slow' ? '🔴' : log.traffic_level === 'normal' ? '🟡' : '🟢'} {log.traffic_level}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Weather */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
           <h2 className="text-white font-bold text-lg mb-4">📅 7-Day Weather Forecast</h2>
           <div className="grid grid-cols-7 gap-2">
@@ -154,6 +244,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Events */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
           <h2 className="text-white font-bold text-lg mb-4">🎪 Upcoming Local Events</h2>
           {events.length === 0 ? (
@@ -176,6 +267,7 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* AI Prediction */}
         <div className="bg-white/10 rounded-2xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-white font-bold text-lg">🤖 AI Traffic Prediction</h2>
@@ -189,22 +281,22 @@ export default function Dashboard() {
           </div>
           {prediction ? (
             <>
-<div className="text-blue-100 leading-relaxed space-y-2">
-  <ReactMarkdown components={{
-    h1: ({children}) => <h1 className="text-white text-xl font-bold mt-4 mb-2">{children}</h1>,
-    h2: ({children}) => <h2 className="text-white text-lg font-bold mt-4 mb-2">{children}</h2>,
-    h3: ({children}) => <h3 className="text-white font-bold mt-3 mb-1">{children}</h3>,
-    strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
-    p: ({children}) => <p className="text-blue-100 mb-2">{children}</p>,
-    li: ({children}) => <li className="text-blue-100 ml-4 list-disc">{children}</li>,
-    ul: ({children}) => <ul className="mb-3 space-y-1">{children}</ul>,
-    ol: ({children}) => <ol className="mb-3 space-y-1 list-decimal ml-4">{children}</ol>,
-    table: ({children}) => <table className="w-full border-collapse mb-3">{children}</table>,
-    th: ({children}) => <th className="text-white font-bold border border-white/20 p-2 text-left bg-white/10">{children}</th>,
-    td: ({children}) => <td className="text-blue-200 border border-white/20 p-2">{children}</td>,
-    hr: () => <hr className="border-white/20 my-3" />,
-  }}>{prediction}</ReactMarkdown>
-</div>
+              <div className="text-blue-100 leading-relaxed space-y-2">
+                <ReactMarkdown components={{
+                  h1: ({children}) => <h1 className="text-white text-xl font-bold mt-4 mb-2">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-white text-lg font-bold mt-4 mb-2">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-white font-bold mt-3 mb-1">{children}</h3>,
+                  strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+                  p: ({children}) => <p className="text-blue-100 mb-2">{children}</p>,
+                  li: ({children}) => <li className="text-blue-100 ml-4 list-disc">{children}</li>,
+                  ul: ({children}) => <ul className="mb-3 space-y-1">{children}</ul>,
+                  ol: ({children}) => <ol className="mb-3 space-y-1 list-decimal ml-4">{children}</ol>,
+                  table: ({children}) => <table className="w-full border-collapse mb-3">{children}</table>,
+                  th: ({children}) => <th className="text-white font-bold border border-white/20 p-2 text-left bg-white/10">{children}</th>,
+                  td: ({children}) => <td className="text-blue-200 border border-white/20 p-2">{children}</td>,
+                  hr: () => <hr className="border-white/20 my-3" />,
+                }}>{prediction}</ReactMarkdown>
+              </div>
               <div className="flex gap-3 pt-4 mt-4 border-t border-white/20">
                 <button
                   onClick={sendEmail}
