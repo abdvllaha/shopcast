@@ -59,7 +59,8 @@ export default function Dashboard() {
           .eq('user_id', session.user.id)
           .order('log_date', { ascending: false })
           .limit(7)
-        if (logs) setRecentLogs(logs)const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
+        if (logs) setRecentLogs(logs)
+        const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
 const perfData = await perfRes.json()
 if (perfData.total) setPerformance(perfData)
 
