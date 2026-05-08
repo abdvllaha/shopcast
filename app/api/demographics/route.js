@@ -32,8 +32,8 @@ STRATEGY: [one sentence]`
     const data = await response.json()
     
     const allText = data.content
-      ?.filter((b) => b.type === 'text')
-      ?.map((b) => b.text)
+      ?.filter(b => b.type === 'text')
+      ?.map(b => b.text)
       ?.join('') || ''
 
     const income = allText.match(/INCOME:\s*(\d+)/)?.[1] || '75000'
@@ -54,7 +54,7 @@ STRATEGY: [one sentence]`
       retailImplication: strategy
     })
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('Demographics error:', err.message)
     return Response.json({ error: 'Demographics unavailable' }, { status: 500 })
   }
