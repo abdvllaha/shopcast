@@ -72,7 +72,13 @@ Then respond with JSON only (no other text, no markdown):
     }
 
     const clean = jsonMatch[0].replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
+    let parsed
+    try {
+      parsed = JSON.parse(clean)
+    } catch (parseErr) {
+      console.error('JSON parse error:', parseErr.message, 'Text:', allText.substring(0, 500))
+      return Response.json({ signal: 'neutral', summary: 'Parse error: ' + parseErr.message, headlines: [] })
+    }
 
     const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
     parsed.summary = stripCites(parsed.summary)
@@ -90,6 +96,7 @@ Then respond with JSON only (no other text, no markdown):
     return Response.json(parsed)
 
   } catch (err) {
-    return Response.json({ signal: 'neutral', summary: 'Unable to fetch market trends', headlines: [] })
+    console.error('Trends error:', err.message)
+    return Response.json({ signal: 'neutral', summary: err.message, headlines: [] })
   }
 }
