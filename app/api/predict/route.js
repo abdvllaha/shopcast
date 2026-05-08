@@ -34,8 +34,12 @@ ${logsSummary}
 Please provide the following sections:
 
 ## 📅 Day-by-Day Traffic Prediction
-A table with columns: Day | Prediction (Low/Medium/High) | Reason | Revenue Opportunity
-For the Revenue Opportunity column, estimate the potential upside or risk in dollars based on the store type (e.g. "Extra $400-600 if staffed well" or "Risk of $200 lost if understaffed").
+For each day, use this exact format on its own line:
+**[Date] — [Low/Medium/High]**
+Reason: [one sentence why]
+Revenue: [dollar estimate opportunity or risk]
+
+Do this for all 7 days. Do NOT use markdown tables.
 
 ## 👥 Staffing Recommendations
 Top 3 specific staffing recommendations for the week based on predicted traffic.
