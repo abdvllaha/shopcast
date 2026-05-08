@@ -1,5 +1,5 @@
 export async function POST(request) {
-  const { store, weather, events } = await request.json()
+  const { store, weather, events, recentLogs } = await request.json()
 
   const weatherSummary = weather.daily.time.map((date, i) => {
     const code = weather.daily.weathercode[i]
@@ -12,10 +12,14 @@ export async function POST(request) {
     ? events.map(e => `${e.date}: ${e.name} at ${e.venue} (${e.type})`).join('\n')
     : 'No major events this week'
 
-  const prompt = `You are ShopCast, an AI assistant for small retail stores. Analyze the following data and provide a weekly foot traffic prediction and action plan.
+  const logsSummary = recentLogs && recentLogs.length > 0
+    ? recentLogs.map(l => `${l.log_date}: ${l.traffic_level}`).join('\n')
+    : 'No historical data yet'
+
+  const prompt = `You are ShopCast, an AI assistant for small retail stores. Analyze the following data and provide a complete weekly action plan.
 
 Store: ${store.store_name}
-Store Type: ${store.store_type}
+Store Description: ${store.store_type}
 City: ${store.city}
 
 7-Day Weather Forecast:
@@ -24,12 +28,29 @@ ${weatherSummary}
 Upcoming Local Events:
 ${eventsSummary}
 
-Please provide:
-1. A day-by-day traffic prediction (Low/Medium/High) with a one-line reason
-2. Top 3 staffing recommendations for the week
-3. Top 3 promotional opportunities based on events or weather
+Recent Traffic History:
+${logsSummary}
 
-Keep your response concise, practical and specific to this store type. Use emojis to make it scannable.`
+Please provide the following sections:
+
+## 📅 Day-by-Day Traffic Prediction
+A table with columns: Day | Prediction (Low/Medium/High) | Reason | Revenue Opportunity
+For the Revenue Opportunity column, estimate the potential upside or risk in dollars based on the store type (e.g. "Extra $400-600 if staffed well" or "Risk of $200 lost if understaffed").
+
+## 👥 Staffing Recommendations
+Top 3 specific staffing recommendations for the week based on predicted traffic.
+
+## 💰 Revenue Opportunities
+Top 3 specific ways to maximize revenue this week based on events and weather. Include estimated dollar impact for each.
+
+## 📱 Ready-to-Post Social Media Captions
+3 social media captions the retailer can copy and post this week. Make them specific to their store type and the local events/weather. Format each as:
+**[Day/Occasion]:** "[Caption text with emojis]"
+
+## 📊 Weekly Outlook Summary
+One paragraph summary of the week ahead and the single most important action the retailer should take.
+
+Keep everything specific to this store type and city. Be direct and practical.`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -40,13 +61,13 @@ Keep your response concise, practical and specific to this store type. Use emoji
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
+      max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     })
   })
 
   const data = await response.json()
-  
+
   if (!response.ok) {
     console.error('Anthropic API error:', JSON.stringify(data))
     return Response.json({ error: 'AI error', details: data }, { status: 500 })
