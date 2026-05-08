@@ -417,9 +417,12 @@ const [pastSaved, setPastSaved] = useState(false)
                   li: ({children}) => <li className="text-blue-100 ml-4 list-disc">{children}</li>,
                   ul: ({children}) => <ul className="mb-3 space-y-1">{children}</ul>,
                   ol: ({children}) => <ol className="mb-3 space-y-1 list-decimal ml-4">{children}</ol>,
-                  table: ({children}) => <table className="w-full border-collapse mb-3">{children}</table>,
-                  th: ({children}) => <th className="text-white font-bold border border-white/20 p-2 text-left bg-white/10">{children}</th>,
-                  td: ({children}) => <td className="text-blue-200 border border-white/20 p-2">{children}</td>,
+                  table: ({children}) => <div className="overflow-x-auto mb-4"><table className="w-full border-collapse">{children}</table></div>,
+                  thead: ({children}) => <thead className="bg-white/20">{children}</thead>,
+                  tbody: ({children}) => <tbody className="divide-y divide-white/10">{children}</tbody>,
+                  th: ({children}) => <th className="text-white font-bold p-3 text-left text-sm whitespace-nowrap">{children}</th>,
+                  td: ({children}) => <td className="text-blue-200 p-3 text-sm border-t border-white/10">{children}</td>,
+                  tr: ({children}) => <tr className="hover:bg-white/5 transition">{children}</tr>,
                   hr: () => <hr className="border-white/20 my-3" />,
                 }}>{prediction}</ReactMarkdown>
               </div>
