@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(request) {
+export async function GET(request) {const authHeader = request.headers.get('authorization')
+if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  return Response.json({ error: 'Unauthorized' }, { status: 401 })
+}
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_KEY
