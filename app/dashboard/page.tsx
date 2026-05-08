@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [salesHistory, setSalesHistory] = useState<any[]>([])
 const [roadTraffic, setRoadTraffic] = useState<any>(null)
 const [trends, setTrends] = useState<any>(null)
+const [demographics, setDemographics] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -72,6 +73,9 @@ const [trends, setTrends] = useState<any>(null)
         if (sales) setSalesHistory(sales)
           const trafficRes = await fetch(`/api/road-traffic?address=${encodeURIComponent(stores.address)}&city=${encodeURIComponent(stores.city)}`)
         const trendsRes = await fetch(`/api/trends?storeType=${encodeURIComponent(stores.store_type)}&city=${encodeURIComponent(stores.city)}`)
+        const demoRes = await fetch(`/api/demographics?address=${encodeURIComponent(stores.address)}&city=${encodeURIComponent(stores.city)}`)
+        const demoData = await demoRes.json()
+        if (demoData.incomeLevel) setDemographics(demoData)
         const trendsData = await trendsRes.json()
         if (trendsData.summary) setTrends(trendsData)
         const trafficData = await trafficRes.json()
@@ -126,7 +130,7 @@ if (perfData.total) setPerformance(perfData)
       const res = await fetch('/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store, weather, events, recentLogs, salesHistory })
+        body: JSON.stringify({ store, weather, events, recentLogs, salesHistory, demographics })
       })
       const data = await res.json()
       if (data.error) {
@@ -388,6 +392,41 @@ const [pastSaved, setPastSaved] = useState(false)
         </div>
       </div>
     )}
+  </div>
+)}
+{/* Demographics */}
+{demographics && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <h2 className="text-white font-bold text-lg mb-4">👥 Area Demographics</h2>
+    <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="bg-white/10 rounded-xl p-4">
+        <p className="text-blue-300 text-xs font-medium mb-1">💰 Median Household Income</p>
+        <p className="text-white text-2xl font-bold">
+          ${parseInt(demographics.medianIncome).toLocaleString()}
+        </p>
+        <p className={`text-sm font-medium mt-1 ${
+          demographics.incomeLevel === 'high' ? 'text-green-400' :
+          demographics.incomeLevel === 'upper-middle' ? 'text-blue-300' :
+          demographics.incomeLevel === 'middle' ? 'text-yellow-400' : 'text-red-400'
+        }`}>
+          {demographics.incomeLevel?.charAt(0).toUpperCase() + demographics.incomeLevel?.slice(1)} Income Area
+        </p>
+      </div>
+      <div className="bg-white/10 rounded-xl p-4">
+        <p className="text-blue-300 text-xs font-medium mb-1">🏘️ Neighbourhood</p>
+        <p className="text-blue-100 text-sm">{demographics.neighbourhood}</p>
+      </div>
+    </div>
+    <div className="flex flex-col gap-2">
+      <div className="bg-white/10 rounded-lg p-3">
+        <p className="text-blue-300 text-xs font-medium mb-1">🛍️ Customer Profile</p>
+        <p className="text-blue-100 text-sm">{demographics.customerProfile}</p>
+      </div>
+      <div className="bg-white/10 rounded-lg p-3">
+        <p className="text-blue-300 text-xs font-medium mb-1">📈 Retail Strategy</p>
+        <p className="text-blue-100 text-sm">{demographics.retailImplication}</p>
+      </div>
+    </div>
   </div>
 )}
         {/* Performance Report */}

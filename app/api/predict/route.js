@@ -1,5 +1,5 @@
 export async function POST(request) {
-  const { store, weather, events, recentLogs, salesHistory } = await request.json()
+  const { store, weather, events, recentLogs, salesHistory, demographics } = await request.json()
 
   const weatherSummary = weather.daily.time.map((date, i) => {
     const code = weather.daily.weathercode[i]
@@ -43,6 +43,8 @@ ${logsSummary}
 
 Previous Year Sales Data:
 ${salesSummary}
+Area Demographics:
+${demographics ? `Median household income: $${parseInt(demographics.medianIncome).toLocaleString()}, Income level: ${demographics.incomeLevel}, Customer profile: ${demographics.customerProfile}` : 'No demographics data available'}
 
 Please provide the following sections:
 
