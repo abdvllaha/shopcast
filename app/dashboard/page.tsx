@@ -42,6 +42,9 @@ export default function Dashboard() {
   const [salesImporting, setSalesImporting] = useState(false)
   const [salesImportResult, setSalesImportResult] = useState('')
   const [showPastLog, setShowPastLog] = useState(false)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+const [chatInput, setChatInput] = useState('')
+const [chatLoading, setChatLoading] = useState(false)
   const [pastDate, setPastDate] = useState('')
   const [pastLevel, setPastLevel] = useState('')
   const [pastSaved, setPastSaved] = useState(false)
@@ -567,7 +570,91 @@ export default function Dashboard() {
             <p className="text-blue-300">Click "Generate Forecast" to get your AI-powered weekly prediction and staffing recommendations.</p>
           )}
         </div>
+{/* AI Chat Assistant */}
+<div className="bg-white/10 rounded-2xl p-6 mt-6">
+  <h2 className="text-white font-bold text-lg mb-2">💬 Ask ShopCast AI</h2>
+  <p className="text-blue-300 text-sm mb-4">Ask anything about your store — staffing, promotions, pricing, strategy</p>
 
+  <div className="flex flex-col gap-2 mb-4 max-h-80 overflow-y-auto">
+    {chatMessages.length === 0 && (
+      <div className="flex flex-wrap gap-2">
+        {['Should I run a sale this Friday?', 'How many staff do I need this weekend?', 'What promotions should I run this week?', 'Is this a good week to launch a new product?'].map(q => (
+          <button key={q} onClick={() => setChatInput(q)}
+            className="bg-white/10 text-blue-200 px-3 py-2 rounded-lg text-xs hover:bg-white/20 transition text-left">
+            {q}
+          </button>
+        ))}
+      </div>
+    )}
+    {chatMessages.map((msg, i) => (
+      <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === 'user' ? 'bg-white/20 text-white ml-8' : 'bg-white/10 text-blue-100 mr-8'}`}>
+        {msg.role === 'assistant' && <p className="text-blue-400 text-xs font-medium mb-1">ShopCast AI</p>}
+        {msg.content}
+      </div>
+    ))}
+    {chatLoading && (
+      <div className="bg-white/10 rounded-xl p-3 mr-8">
+        <p className="text-blue-400 text-xs font-medium mb-1">ShopCast AI</p>
+        <p className="text-blue-300 text-sm">Thinking...</p>
+      </div>
+    )}
+  </div>
+
+  <div className="flex gap-2">
+    <input
+      type="text"
+      value={chatInput}
+      onChange={e => setChatInput(e.target.value)}
+      onKeyDown={async e => {
+        if (e.key === 'Enter' && chatInput.trim() && !chatLoading) {
+          const userMessage = chatInput.trim()
+          setChatInput('')
+          setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
+          setChatLoading(true)
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: userMessage,
+              store, weather, events, recentLogs, salesHistory, demographics,
+              chatHistory: chatMessages
+            })
+          })
+          const data = await res.json()
+          setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+          setChatLoading(false)
+        }
+      }}
+      placeholder="Ask anything about your store..."
+      className="flex-1 bg-white/10 text-white rounded-lg px-4 py-3 text-sm border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 placeholder-blue-300"
+    />
+    <button
+      onClick={async () => {
+        if (!chatInput.trim() || chatLoading) return
+        const userMessage = chatInput.trim()
+        setChatInput('')
+        setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
+        setChatLoading(true)
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userMessage,
+            store, weather, events, recentLogs, salesHistory, demographics,
+            chatHistory: chatMessages
+          })
+        })
+        const data = await res.json()
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+        setChatLoading(false)
+      }}
+      disabled={chatLoading || !chatInput.trim()}
+      className="bg-white text-blue-900 px-4 py-3 rounded-lg font-semibold text-sm hover:bg-blue-50 transition disabled:opacity-50"
+    >
+      Send
+    </button>
+  </div>
+</div>
       </div>
     </main>
   )
