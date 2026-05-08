@@ -48,6 +48,16 @@ Then respond with JSON only (no other text):
 
     const clean = textBlock.text.replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
+    // Strip citation tags from all text fields
+const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
+parsed.summary = stripCites(parsed.summary)
+if (parsed.headlines) {
+  parsed.headlines = parsed.headlines.map(h => ({
+    ...h,
+    title: stripCites(h.title),
+    snippet: stripCites(h.snippet)
+  }))
+}
     return Response.json(parsed)
 
   } catch (err) {
