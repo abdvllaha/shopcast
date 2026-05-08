@@ -93,5 +93,20 @@ Keep everything specific to this store type and city. Be direct and practical.`
   }
 
   const text = data.content[0].text
-  return Response.json({ prediction: text })
+
+  // Extract day-by-day predictions to save for accuracy tracking
+  const lines = text.split('\n')
+  const predictions = []
+  for (const line of lines) {
+    const match = line.match(/\*\*(\d{4}-\d{2}-\d{2})\s*—\s*(Low|Medium|High)\*\*/)
+    if (match) {
+      const level = match[2].toLowerCase()
+      predictions.push({
+        date: match[1],
+        level: level === 'medium' ? 'normal' : level === 'high' ? 'busy' : 'slow'
+      })
+    }
+  }
+
+  return Response.json({ prediction: text, predictions })
 }

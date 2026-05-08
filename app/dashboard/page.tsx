@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [chatMessages, setChatMessages] = useState<any[]>([])
 const [chatInput, setChatInput] = useState('')
 const [chatLoading, setChatLoading] = useState(false)
+const [accuracy, setAccuracy] = useState<any>(null)
   const [pastDate, setPastDate] = useState('')
   const [pastLevel, setPastLevel] = useState('')
   const [pastSaved, setPastSaved] = useState(false)
@@ -81,6 +82,9 @@ const [chatLoading, setChatLoading] = useState(false)
         const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
         const perfData = await perfRes.json()
         if (perfData.total) setPerformance(perfData)
+          const accRes = await fetch(`/api/accuracy?userId=${session.user.id}`)
+        const accData = await accRes.json()
+        if (accData.accuracy !== undefined) setAccuracy(accData)
 
         const [weatherRes, eventsRes, trafficRes] = await Promise.all([
           fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
@@ -150,9 +154,29 @@ const [chatLoading, setChatLoading] = useState(false)
         body: JSON.stringify({ store, weather, events, recentLogs, salesHistory, demographics })
       })
       const data = await res.json()
-      if (data.error) setPrediction('Error: ' + JSON.stringify(data.details))
-      else setPrediction(data.prediction)
-    } catch (err: any) { setPrediction('Error: ' + err.message) }
+      if (data.error) {
+        setPrediction('Error: ' + JSON.stringify(data.details))
+      } else {
+        setPrediction(data.prediction)
+        if (data.predictions && data.predictions.length > 0) {
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            await fetch('/api/accuracy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: session.user.id,
+                storeId: store.id,
+                predictions: data.predictions
+              })
+            })
+          }
+        }
+      }
+    } catch (err: any) {
+      setPrediction('Error: ' + err.message)
+    }
     setPredicting(false)
   }
 
