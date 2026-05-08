@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [recentLogs, setRecentLogs] = useState<any[]>([])
   const [performance, setPerformance] = useState<any>(null)
   const [salesHistory, setSalesHistory] = useState<any[]>([])
+const [roadTraffic, setRoadTraffic] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -68,6 +69,9 @@ export default function Dashboard() {
           .order('sale_date', { ascending: false })
           .limit(365)
         if (sales) setSalesHistory(sales)
+          const trafficRes = await fetch(`/api/road-traffic?address=${encodeURIComponent(stores.address)}&city=${encodeURIComponent(stores.city)}`)
+        const trafficData = await trafficRes.json()
+        if (trafficData.trafficLevel) setRoadTraffic(trafficData)
         const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
         const perfData = await perfRes.json()
         console.log('perfData:', perfData)
@@ -296,6 +300,32 @@ const [pastSaved, setPastSaved] = useState(false)
   )}
 </div>
         </div>
+        {/* Road Traffic */}
+{roadTraffic && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <h2 className="text-white font-bold text-lg mb-4">🚗 Street Traffic Near Your Store</h2>
+    <div className="flex items-center gap-4">
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${
+        roadTraffic.trafficColor === 'green' ? 'bg-green-500' :
+        roadTraffic.trafficColor === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'
+      }`}>
+        🚗
+      </div>
+      <div>
+        <p className="text-white text-xl font-bold">{roadTraffic.trafficLabel}</p>
+        <p className="text-blue-200 text-sm">Current speed: {roadTraffic.currentSpeed} km/h vs normal {roadTraffic.freeFlowSpeed} km/h</p>
+        <p className="text-blue-300 text-xs mt-1">Roads are at {roadTraffic.trafficRatio}% of normal flow</p>
+      </div>
+    </div>
+    <div className="mt-4 bg-white/10 rounded-xl p-3">
+      <p className="text-blue-200 text-sm">
+        {roadTraffic.trafficColor === 'green' && '✅ Roads are clear — customers can easily reach your store right now'}
+        {roadTraffic.trafficColor === 'yellow' && '⚠️ Moderate traffic — some customers may be delayed getting to your store'}
+        {roadTraffic.trafficColor === 'red' && '🔴 Heavy traffic nearby — foot traffic may be lower until roads clear'}
+      </p>
+    </div>
+  </div>
+)}
         {/* Performance Report */}
 {performance && (
   <div className="bg-white/10 rounded-2xl p-6 mb-6">
