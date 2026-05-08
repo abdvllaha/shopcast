@@ -352,6 +352,28 @@ const [pastSaved, setPastSaved] = useState(false)
         <p className="text-blue-200 text-sm mt-1">{trends.summary}</p>
       </div>
     </div>
+    {(trends.economy || trends.seasonal || trends.social) && (
+  <div className="grid grid-cols-1 gap-2 mt-4 mb-4">
+    {trends.economy && (
+      <div className="bg-white/10 rounded-lg p-3">
+        <p className="text-blue-300 text-xs font-medium mb-1">🏦 Economy</p>
+        <p className="text-blue-100 text-sm">{trends.economy}</p>
+      </div>
+    )}
+    {trends.seasonal && (
+      <div className="bg-white/10 rounded-lg p-3">
+        <p className="text-blue-300 text-xs font-medium mb-1">📅 Seasonal</p>
+        <p className="text-blue-100 text-sm">{trends.seasonal}</p>
+      </div>
+    )}
+    {trends.social && (
+      <div className="bg-white/10 rounded-lg p-3">
+        <p className="text-blue-300 text-xs font-medium mb-1">📱 Social Buzz</p>
+        <p className="text-blue-100 text-sm">{trends.social}</p>
+      </div>
+    )}
+  </div>
+)}
     {trends.headlines && trends.headlines.length > 0 && (
       <div className="mt-3">
         <p className="text-blue-300 text-xs mb-2">Recent headlines:</p>

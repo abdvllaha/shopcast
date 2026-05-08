@@ -2,6 +2,8 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const storeType = searchParams.get('storeType')
   const city = searchParams.get('city')
+  const month = new Date().toLocaleString('en-US', { month: 'long' })
+  const year = new Date().getFullYear()
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -13,7 +15,7 @@ export async function GET(request) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
+        max_tokens: 800,
         tools: [
           {
             type: 'web_search_20250305',
@@ -22,17 +24,29 @@ export async function GET(request) {
         ],
         messages: [{
           role: 'user',
-          content: `Search the web for recent news and consumer trends about "${storeType}" retail shopping in "${city}" in 2026. 
+          content: `You are a retail market analyst. Search the web to find current intelligence for a "${storeType}" store in "${city}" for ${month} ${year}.
 
-Then respond with JSON only (no other text):
+Search for and analyze ALL of the following:
+1. Current Canadian economy - interest rates, consumer confidence, inflation, spending trends
+2. Seasonal shopping trends for ${month} - what are people buying right now?
+3. Social media and Reddit trends - what are people saying about ${storeType} products right now?
+4. Local ${city} retail news - any relevant local economic conditions
+5. Industry trends for ${storeType} retail in Canada right now
+
+Then respond with JSON only (no other text, no markdown):
 {
   "signal": "high|neutral|low",
-  "summary": "2 sentence summary of current consumer demand and trends for this store type in this city",
   "emoji": "relevant emoji",
+  "summary": "3 sentence summary covering economy, seasonal trends, and social buzz relevant to this store right now",
+  "economy": "1 sentence on current Canadian economic conditions affecting retail",
+  "seasonal": "1 sentence on what people are shopping for this time of year",
+  "social": "1 sentence on social media and Reddit trends relevant to this store type",
   "headlines": [
     {"title": "headline 1", "snippet": "brief description"},
     {"title": "headline 2", "snippet": "brief description"},
-    {"title": "headline 3", "snippet": "brief description"}
+    {"title": "headline 3", "snippet": "brief description"},
+    {"title": "headline 4", "snippet": "brief description"},
+    {"title": "headline 5", "snippet": "brief description"}
   ]
 }`
         }]
@@ -48,16 +62,20 @@ Then respond with JSON only (no other text):
 
     const clean = textBlock.text.replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
-    // Strip citation tags from all text fields
-const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
-parsed.summary = stripCites(parsed.summary)
-if (parsed.headlines) {
-  parsed.headlines = parsed.headlines.map(h => ({
-    ...h,
-    title: stripCites(h.title),
-    snippet: stripCites(h.snippet)
-  }))
-}
+
+    const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
+    parsed.summary = stripCites(parsed.summary)
+    parsed.economy = stripCites(parsed.economy)
+    parsed.seasonal = stripCites(parsed.seasonal)
+    parsed.social = stripCites(parsed.social)
+    if (parsed.headlines) {
+      parsed.headlines = parsed.headlines.map(h => ({
+        ...h,
+        title: stripCites(h.title),
+        snippet: stripCites(h.snippet)
+      }))
+    }
+
     return Response.json(parsed)
 
   } catch (err) {
