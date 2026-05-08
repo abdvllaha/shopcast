@@ -2,28 +2,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const storeType = searchParams.get('storeType')
   const city = searchParams.get('city')
-  const apiKey = process.env.GNEWS_API_KEY
 
   try {
-    const query = `${storeType} ${city} shopping retail`
-    
-    const res = await fetch(
-      `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=en&max=5&apikey=${apiKey}`
-    )
-    const data = await res.json()
-
-    if (!data.articles || data.articles.length === 0) {
-      return Response.json({ signal: 'neutral', headlines: [], summary: 'No recent news found for this area' })
-    }
-
-    const headlines = data.articles.map(article => ({
-      title: article.title,
-      snippet: article.description,
-      link: article.url,
-      source: article.source.name
-    }))
-
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,25 +13,43 @@ export async function GET(request) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        max_tokens: 500,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search'
+          }
+        ],
         messages: [{
           role: 'user',
-          content: `Based on these recent news articles about "${storeType}" retail in "${city}", give a 2-sentence demand signal summary for a small retailer. Is consumer interest high, low or neutral right now?
+          content: `Search the web for recent news and consumer trends about "${storeType}" retail shopping in "${city}" in 2026. 
 
-Articles:
-${headlines.map(h => `- ${h.title}: ${h.snippet}`).join('\n')}
-
-Respond with JSON only: {"signal": "high|neutral|low", "summary": "2 sentence summary", "emoji": "relevant emoji"}`
+Then respond with JSON only (no other text):
+{
+  "signal": "high|neutral|low",
+  "summary": "2 sentence summary of current consumer demand and trends for this store type in this city",
+  "emoji": "relevant emoji",
+  "headlines": [
+    {"title": "headline 1", "snippet": "brief description"},
+    {"title": "headline 2", "snippet": "brief description"},
+    {"title": "headline 3", "snippet": "brief description"}
+  ]
+}`
         }]
       })
     })
 
-    const claudeData = await claudeRes.json()
-    const text = claudeData.content[0].text
-    const clean = text.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
+    const data = await response.json()
+    
+    const textBlock = data.content?.find(block => block.type === 'text')
+    if (!textBlock) {
+      return Response.json({ signal: 'neutral', summary: 'No trends data available right now', headlines: [] })
+    }
 
-    return Response.json({ ...parsed, headlines })
+    const clean = textBlock.text.replace(/```json|```/g, '').trim()
+    const parsed = JSON.parse(clean)
+    return Response.json(parsed)
+
   } catch (err) {
     return Response.json({ signal: 'neutral', summary: 'Unable to fetch market trends', headlines: [] })
   }
