@@ -55,12 +55,23 @@ Then respond with JSON only (no other text, no markdown):
 
     const data = await response.json()
     
-    const textBlock = data.content?.find(block => block.type === 'text')
-    if (!textBlock) {
+    if (!data.content || data.content.length === 0) {
       return Response.json({ signal: 'neutral', summary: 'No trends data available right now', headlines: [] })
     }
 
-    const clean = textBlock.text.replace(/```json|```/g, '').trim()
+    // Combine all text blocks
+    const allText = data.content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('')
+
+    // Extract JSON from the response
+    const jsonMatch = allText.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      return Response.json({ signal: 'neutral', summary: 'No trends data available right now', headlines: [] })
+    }
+
+    const clean = jsonMatch[0].replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
 
     const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
