@@ -1,5 +1,5 @@
 export async function POST(request) {
-  const { store, weather, events, recentLogs } = await request.json()
+  const { store, weather, events, recentLogs, salesHistory } = await request.json()
 
   const weatherSummary = weather.daily.time.map((date, i) => {
     const code = weather.daily.weathercode[i]
@@ -11,6 +11,13 @@ export async function POST(request) {
   const eventsSummary = events.length > 0
     ? events.map(e => `${e.date}: ${e.name} at ${e.venue} (${e.type})`).join('\n')
     : 'No major events this week'
+
+const eventRelevanceNote = `When analyzing events, consider:
+- Sports arenas and large venues draw crowds AWAY from retail stores unless the store is within 1-2 blocks
+- Music venues and theatres create pre/post event foot traffic for nearby stores only
+- Outdoor festivals and markets increase general area foot traffic for all nearby stores
+- Be skeptical about event impact for stores that are not in the immediate vicinity of the venue
+- Only flag an event as HIGH impact if it directly relates to the store type or is extremely close by`
 
   const logsSummary = recentLogs && recentLogs.length > 0
     ? recentLogs.map(l => `${l.log_date}: ${l.traffic_level}`).join('\n')
@@ -28,8 +35,15 @@ ${weatherSummary}
 Upcoming Local Events:
 ${eventsSummary}
 
+Event Relevance Guidelines:
+${eventRelevanceNote}
+
 Recent Traffic History:
 ${logsSummary}
+Previous Year Sales Data:
+${salesHistory && salesHistory.length > 0 
+  ? salesHistory.map(s => `${s.sale_date}: $${s.revenue}`).join('\n')
+  : 'No previous sales data uploaded yet'}
 
 Please provide the following sections:
 

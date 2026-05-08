@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [loggingTraffic, setLoggingTraffic] = useState(false)
   const [recentLogs, setRecentLogs] = useState<any[]>([])
   const [performance, setPerformance] = useState<any>(null)
+  const [salesHistory, setSalesHistory] = useState<any[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -60,6 +61,13 @@ export default function Dashboard() {
           .order('log_date', { ascending: false })
           .limit(7)
         if (logs) setRecentLogs(logs)
+          const { data: sales } = await supabase
+          .from('sales_history')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('sale_date', { ascending: false })
+          .limit(365)
+        if (sales) setSalesHistory(sales)
         const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
         const perfData = await perfRes.json()
         console.log('perfData:', perfData)
@@ -110,7 +118,7 @@ if (perfData.total) setPerformance(perfData)
       const res = await fetch('/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store, weather, events, recentLogs })
+        body: JSON.stringify({ store, weather, events, recentLogs, salesHistory })
       })
       const data = await res.json()
       if (data.error) {
@@ -149,6 +157,9 @@ if (perfData.total) setPerformance(perfData)
   }
 const [showPastLog, setShowPastLog] = useState(false)
 const [showImport, setShowImport] = useState(false)
+const [showSalesImport, setShowSalesImport] = useState(false)
+const [salesImporting, setSalesImporting] = useState(false)
+const [salesImportResult, setSalesImportResult] = useState('')
 const [importing, setImporting] = useState(false)
 const [importResult, setImportResult] = useState('')
 const [pastDate, setPastDate] = useState('')
@@ -372,6 +383,72 @@ const [pastSaved, setPastSaved] = useState(false)
 
       {importing && <p className="text-blue-300 text-sm mt-3">Importing...</p>}
       {importResult && <p className="text-blue-100 text-sm mt-3">{importResult}</p>}
+    </div>
+  )}
+</div>
+{/* Sales History Import */}
+<div className="bg-white/10 rounded-2xl p-6 mb-6">
+  <div className="flex justify-between items-center">
+    <div>
+      <h2 className="text-white font-bold text-lg">💰 Import Previous Year Sales</h2>
+      <p className="text-blue-300 text-sm mt-1">Upload last year's daily sales to improve revenue predictions</p>
+    </div>
+    <button
+      onClick={() => setShowSalesImport(!showSalesImport)}
+      className="bg-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-white/30 transition"
+    >
+      {showSalesImport ? 'Hide' : 'Upload CSV'}
+    </button>
+  </div>
+
+  {showSalesImport && (
+    <div className="mt-4">
+      <div className="bg-white/10 rounded-xl p-4 mb-4">
+        <p className="text-blue-200 text-sm font-medium mb-2">📋 Required CSV format:</p>
+        <code className="text-green-300 text-xs">
+          date,revenue<br/>
+          2025-05-01,2450.00<br/>
+          2025-05-02,1820.50<br/>
+          2025-05-03,3100.00
+        </code>
+      </div>
+
+      <input
+        type="file"
+        accept=".csv"
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (!file) return
+          setSalesImporting(true)
+          setSalesImportResult('')
+
+          const csvText = await file.text()
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) return
+
+          const res = await fetch('/api/import-sales', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              csvText,
+              userId: session.user.id,
+              storeId: store.id
+            })
+          })
+          const data = await res.json()
+          if (data.success) {
+            setSalesImportResult(`✅ Successfully imported ${data.imported} days of sales data!`)
+          } else {
+            setSalesImportResult(`❌ Error: ${data.error}`)
+          }
+          setSalesImporting(false)
+        }}
+        className="block w-full text-blue-200 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-blue-900 file:font-semibold hover:file:bg-blue-50 cursor-pointer"
+      />
+
+      {salesImporting && <p className="text-blue-300 text-sm mt-3">Importing...</p>}
+      {salesImportResult && <p className="text-blue-100 text-sm mt-3">{salesImportResult}</p>}
     </div>
   )}
 </div>
