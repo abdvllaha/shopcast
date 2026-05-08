@@ -108,5 +108,7 @@ Keep everything specific to this store type and city. Be direct and practical.`
     }
   }
 
-  return Response.json({ prediction: text, predictions })
+  console.log('Extracted predictions:', predictions)
+console.log('Sample text:', text.substring(0, 500))
+return Response.json({ prediction: text, predictions })
 }
