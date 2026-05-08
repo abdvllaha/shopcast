@@ -589,7 +589,12 @@ const [chatLoading, setChatLoading] = useState(false)
     {chatMessages.map((msg, i) => (
       <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === 'user' ? 'bg-white/20 text-white ml-8' : 'bg-white/10 text-blue-100 mr-8'}`}>
         {msg.role === 'assistant' && <p className="text-blue-400 text-xs font-medium mb-1">ShopCast AI</p>}
-        {msg.content}
+        <ReactMarkdown components={{
+  strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+  p: ({children}) => <span>{children}</span>,
+  ul: ({children}) => <ul className="list-disc ml-4 mt-1">{children}</ul>,
+  li: ({children}) => <li className="mb-1">{children}</li>,
+}}>{msg.content}</ReactMarkdown>
       </div>
     ))}
     {chatLoading && (
