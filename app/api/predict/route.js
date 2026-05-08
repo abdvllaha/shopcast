@@ -98,7 +98,7 @@ Keep everything specific to this store type and city. Be direct and practical.`
   const lines = text.split('\n')
   const predictions = []
   for (const line of lines) {
-    const match = line.match(/(\d{4}-\d{2}-\d{2})[^—]*—\s*(Low|Medium|High)/)
+    const match = line.match(/(\d{4}-\d{2}-\d{2}).*?—\s*(Low|Medium|High)/i)
     if (match) {
       const level = match[2].toLowerCase()
       predictions.push({
