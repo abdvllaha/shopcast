@@ -17,16 +17,14 @@ export async function GET(request) {
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{
           role: 'user',
-          content: `Search for demographic and income data for the neighbourhood around "${address}" in ${city}, Canada. Look for average household income, population density, and typical resident profile for this specific area.
+          content: `Search for demographic and income data for the neighbourhood around "${address}" in ${city}, Canada. Find average household income and resident profile.
 
-After searching, respond with ONLY this JSON object and nothing else:
-{
-  "medianIncome": 85000,
-  "incomeLevel": "middle",
-  "neighbourhood": "one sentence describing this neighbourhood",
-  "retailImplication": "one sentence on retail strategy for this income level",
-  "customerProfile": "one sentence on typical customer in this area"
-}`
+After searching, respond with ONLY these exact lines and nothing else:
+INCOME: [number only, e.g. 85000]
+LEVEL: [one of: low, middle, upper-middle, high]
+NEIGHBOURHOOD: [one sentence]
+CUSTOMER: [one sentence]
+STRATEGY: [one sentence]`
         }]
       })
     })
@@ -34,19 +32,29 @@ After searching, respond with ONLY this JSON object and nothing else:
     const data = await response.json()
     
     const allText = data.content
-      ?.filter(b => b.type === 'text')
-      ?.map(b => b.text)
+      ?.filter((b) => b.type === 'text')
+      ?.map((b) => b.text)
       ?.join('') || ''
 
-    const jsonMatch = allText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
+    const income = allText.match(/INCOME:\s*(\d+)/)?.[1] || '75000'
+    const level = allText.match(/LEVEL:\s*([^\n]+)/)?.[1]?.trim() || 'middle'
+    const neighbourhood = allText.match(/NEIGHBOURHOOD:\s*([^\n]+)/)?.[1]?.trim() || ''
+    const customer = allText.match(/CUSTOMER:\s*([^\n]+)/)?.[1]?.trim() || ''
+    const strategy = allText.match(/STRATEGY:\s*([^\n]+)/)?.[1]?.trim() || ''
+
+    if (!neighbourhood) {
       return Response.json({ error: 'Could not get demographics' }, { status: 500 })
     }
 
-    const parsed = JSON.parse(jsonMatch[0])
-    return Response.json(parsed)
+    return Response.json({
+      medianIncome: income,
+      incomeLevel: level,
+      neighbourhood,
+      customerProfile: customer,
+      retailImplication: strategy
+    })
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('Demographics error:', err.message)
     return Response.json({ error: 'Demographics unavailable' }, { status: 500 })
   }
