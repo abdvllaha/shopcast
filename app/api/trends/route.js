@@ -6,7 +6,8 @@ export async function GET(request) {
   const year = new Date().getFullYear()
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Step 1 — Search the web
+    const searchResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -15,72 +16,74 @@ export async function GET(request) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        tools: [
-          {
-            type: 'web_search_20250305',
-            name: 'web_search'
-          }
-        ],
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{
           role: 'user',
-          content: `You are a retail market analyst. Search the web to find current intelligence for a "${storeType}" store in "${city}" for ${month} ${year}.
+          content: `Search for: current Canadian economy retail spending ${year}, seasonal shopping trends ${month} ${year}, ${storeType} retail trends Canada ${year}, ${city} retail news ${year}, social media trends ${storeType} furniture ${year}. Summarize what you find in plain text.`
+        }]
+      })
+    })
 
-Search for and analyze ALL of the following:
-1. Current Canadian economy - interest rates, consumer confidence, inflation, spending trends
-2. Seasonal shopping trends for ${month} - what are people buying right now?
-3. Social media and Reddit trends - what are people saying about ${storeType} products right now?
-4. Local ${city} retail news - any relevant local economic conditions
-5. Industry trends for ${storeType} retail in Canada right now
+    const searchData = await searchResponse.json()
+    const searchText = searchData.content
+      ?.filter(b => b.type === 'text')
+      ?.map(b => b.text)
+      ?.join('') || ''
 
-Then respond with JSON only (no other text, no markdown):
+    if (!searchText) {
+      return Response.json({ signal: 'neutral', summary: 'No trends data available right now', headlines: [] })
+    }
+
+    // Step 2 — Analyze and format
+    const analyzeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{
+          role: 'user',
+          content: `Based on this market research about "${storeType}" retail in "${city}" for ${month} ${year}:
+
+${searchText}
+
+Respond with ONLY a JSON object, no other text:
 {
-  "signal": "high|neutral|low",
-  "emoji": "relevant emoji",
-  "summary": "3 sentence summary covering economy, seasonal trends, and social buzz relevant to this store right now",
-  "economy": "1 sentence on current Canadian economic conditions affecting retail",
-  "seasonal": "1 sentence on what people are shopping for this time of year",
-  "social": "1 sentence on social media and Reddit trends relevant to this store type",
+  "signal": "high or neutral or low",
+  "emoji": "one relevant emoji",
+  "summary": "3 sentence summary of demand outlook",
+  "economy": "1 sentence on Canadian economy affecting retail",
+  "seasonal": "1 sentence on what people are shopping for in ${month}",
+  "social": "1 sentence on social media trends for this store type",
   "headlines": [
-    {"title": "headline 1", "snippet": "brief description"},
-    {"title": "headline 2", "snippet": "brief description"},
-    {"title": "headline 3", "snippet": "brief description"},
-    {"title": "headline 4", "snippet": "brief description"},
-    {"title": "headline 5", "snippet": "brief description"}
+    {"title": "finding 1", "snippet": "detail"},
+    {"title": "finding 2", "snippet": "detail"},
+    {"title": "finding 3", "snippet": "detail"}
   ]
 }`
         }]
       })
     })
 
-    const data = await response.json()
-    
-    if (!data.content || data.content.length === 0) {
-      return Response.json({ signal: 'neutral', summary: 'No trends data available right now', headlines: [] })
-    }
+    const analyzeData = await analyzeResponse.json()
+    const analyzeText = analyzeData.content
+      ?.filter(b => b.type === 'text')
+      ?.map(b => b.text)
+      ?.join('') || ''
 
-    // Combine all text blocks
-    const allText = data.content
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('')
-
-    // Extract JSON from the response
-    const jsonMatch = allText.match(/\{[\s\S]*\}/)
+    const jsonMatch = analyzeText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return Response.json({ signal: 'neutral', summary: 'No trends data available right now', headlines: [] })
     }
 
-    const clean = jsonMatch[0].replace(/```json|```/g, '').trim()
-    let parsed
-    try {
-      parsed = JSON.parse(clean)
-    } catch (parseErr) {
-      console.error('JSON parse error:', parseErr.message, 'Text:', allText.substring(0, 500))
-      return Response.json({ signal: 'neutral', summary: 'Parse error: ' + parseErr.message, headlines: [] })
-    }
-
+    const parsed = JSON.parse(jsonMatch[0])
     const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
+    
     parsed.summary = stripCites(parsed.summary)
     parsed.economy = stripCites(parsed.economy)
     parsed.seasonal = stripCites(parsed.seasonal)
@@ -97,6 +100,6 @@ Then respond with JSON only (no other text, no markdown):
 
   } catch (err) {
     console.error('Trends error:', err.message)
-    return Response.json({ signal: 'neutral', summary: err.message, headlines: [] })
+    return Response.json({ signal: 'neutral', summary: 'Unable to fetch market trends right now', headlines: [] })
   }
 }
