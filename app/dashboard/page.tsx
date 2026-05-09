@@ -293,11 +293,11 @@ export default function Dashboard() {
   )
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-6">
-      <div className="max-w-5xl mx-auto">
+    <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-3 sm:p-6">
+      <div className="max-w-5xl mx-auto px-2 sm:px-0">
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-start mb-8">
           <div className="relative">
             <h1 className="text-white text-2xl font-bold">ShopCast</h1>
             <button onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
@@ -336,7 +336,7 @@ export default function Dashboard() {
           <div className="flex gap-3">
             {TRAFFIC_LEVELS.map(({ level, emoji, label }) => (
               <button key={level} onClick={() => logTraffic(level)} disabled={loggingTraffic}
-                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition ${todayLog === level ? 'bg-white text-blue-900 scale-105' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                className={`flex-1 py-4 rounded-xl font-semibold text-sm transition ${todayLog === level ? 'bg-white text-blue-900 scale-105' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                 {emoji} {label}
               </button>
             ))}
@@ -474,7 +474,7 @@ export default function Dashboard() {
           </div>
           {demographics ? (
             <>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className="bg-white/10 rounded-xl p-4">
                   <p className="text-blue-300 text-xs font-medium mb-1">💰 Median Household Income</p>
                   <p className="text-white text-2xl font-bold">${parseInt(demographics.medianIncome).toLocaleString()}</p>
@@ -636,7 +636,7 @@ export default function Dashboard() {
           <div className="bg-white/10 rounded-2xl p-6 mb-6">
             <h2 className="text-white font-bold text-lg mb-4">📊 Your Store Performance</h2>
             <p className="text-blue-300 text-sm mb-4">Based on your last {performance.total} check-ins</p>
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-green-400">{performance.busyPct}%</p><p className="text-blue-200 text-sm mt-1">🟢 Busy Days</p></div>
               <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-yellow-400">{performance.normalPct}%</p><p className="text-blue-200 text-sm mt-1">🟡 Normal Days</p></div>
               <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-red-400">{performance.slowPct}%</p><p className="text-blue-200 text-sm mt-1">🔴 Slow Days</p></div>
@@ -724,7 +724,7 @@ export default function Dashboard() {
         {/* Weather */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
           <h2 className="text-white font-bold text-lg mb-4">📅 7-Day Weather Forecast</h2>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 overflow-x-auto">
             {weather?.daily?.time?.map((date: string, i: number) => {
               const day = new Date(date)
               const code = weather.daily.weathercode[i]

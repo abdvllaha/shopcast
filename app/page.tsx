@@ -17,7 +17,7 @@ export default function Home() {
         <div className="bg-blue-800 text-blue-200 text-sm font-medium px-4 py-1 rounded-full mb-6">
           AI-Powered Foot Traffic Forecasting
         </div>
-        <h2 className="text-5xl font-bold text-white max-w-3xl leading-tight mb-6">
+        <h2 className="text-3xl sm:text-5xl font-bold text-white max-w-3xl leading-tight mb-6">
           Know how busy your store will be — before it happens
         </h2>
         <p className="text-blue-200 text-xl max-w-xl mb-10">
@@ -29,7 +29,7 @@ export default function Home() {
       </div>
 
       {/* Features */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto px-8 pb-24">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto px-4 sm:px-8 pb-24">
         <div className="bg-blue-800 bg-opacity-50 rounded-2xl p-6">
           <div className="text-3xl mb-3">🌤️</div>
           <h3 className="text-white font-bold text-lg mb-2">Weather Intelligence</h3>
