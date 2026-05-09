@@ -50,6 +50,9 @@ export default function Dashboard() {
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [competitors, setCompetitors] = useState<any[]>([])
+const [competitorAnalysis, setCompetitorAnalysis] = useState<any>(null)
+const [loadingCompetitors, setLoadingCompetitors] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -88,6 +91,9 @@ export default function Dashboard() {
         const accRes = await fetch(`/api/accuracy?userId=${session.user.id}`)
         const accData = await accRes.json()
         if (accData.accuracy !== undefined) setAccuracy(accData)
+          const { data: comps } = await supabase
+          .from('competitors').select('*').eq('user_id', session.user.id)
+        if (comps) setCompetitors(comps)
 
         const [weatherRes, eventsRes, trafficRes] = await Promise.all([
           fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
@@ -129,6 +135,15 @@ export default function Dashboard() {
       if (data.incomeLevel) setDemographics(data)
     } catch (err) { console.error('Demographics error:', err) }
     setLoadingDemographics(false)
+  }
+  const loadCompetitorAnalysis = async () => {
+    setLoadingCompetitors(true)
+    try {
+      const res = await fetch(`/api/competitor-analysis?userId=${userId}&store=${encodeURIComponent(JSON.stringify(store))}`)
+      const data = await res.json()
+      if (!data.error) setCompetitorAnalysis(data)
+    } catch (err) { console.error('Competitor error:', err) }
+    setLoadingCompetitors(false)
   }
 
   const logTraffic = async (level: string) => {
@@ -411,6 +426,98 @@ export default function Dashboard() {
             <p className="text-blue-300 text-sm">Click "Load Demographics" to see income and customer profile data for your store's area.</p>
           )}
         </div>
+        {/* Competitor Analysis */}
+{competitors.length > 0 && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <div className="flex justify-between items-center mb-4">
+      <div>
+        <h2 className="text-white font-bold text-lg">🏪 Competitor Analysis</h2>
+        <p className="text-blue-300 text-sm mt-1">Tracking {competitors.length} competitor{competitors.length > 1 ? 's' : ''}</p>
+      </div>
+      <button onClick={loadCompetitorAnalysis} disabled={loadingCompetitors}
+        className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
+        {loadingCompetitors ? 'Analyzing...' : competitorAnalysis ? '🔄 Refresh' : 'Analyze'}
+      </button>
+    </div>
+
+    {competitorAnalysis ? (
+      <>
+        {/* Traffic Comparison */}
+        <div className="flex flex-col gap-2 mb-4">
+          <p className="text-blue-300 text-xs font-medium">🚗 Current Road Traffic Comparison</p>
+          <div className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
+            <p className="text-white font-medium text-sm">📍 {store?.store_name} (You)</p>
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+              competitorAnalysis.myTraffic?.trafficColor === 'green' ? 'bg-green-500 text-white' :
+              competitorAnalysis.myTraffic?.trafficColor === 'yellow' ? 'bg-yellow-500 text-white' :
+              'bg-red-500 text-white'
+            }`}>{competitorAnalysis.myTraffic?.trafficLabel || 'Unknown'}</span>
+          </div>
+          {competitorAnalysis.competitorTraffic?.map((comp: any, i: number) => (
+            <div key={i} className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
+              <p className="text-blue-200 text-sm">{comp.name}</p>
+              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                comp.traffic?.trafficColor === 'green' ? 'bg-green-500 text-white' :
+                comp.traffic?.trafficColor === 'yellow' ? 'bg-yellow-500 text-white' :
+                comp.traffic?.trafficColor === 'red' ? 'bg-red-500 text-white' :
+                'bg-gray-500 text-white'
+              }`}>{comp.traffic?.trafficLabel || 'No data'}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* AI Summary */}
+        {competitorAnalysis.summary && (
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <p className="text-blue-300 text-xs font-medium mb-2">🤖 AI Analysis</p>
+            <p className="text-blue-100 text-sm">{competitorAnalysis.summary}</p>
+          </div>
+        )}
+
+        {/* Opportunities */}
+        {competitorAnalysis.opportunities?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <p className="text-blue-300 text-xs font-medium mb-2">✅ Opportunities</p>
+            <ul className="flex flex-col gap-1">
+              {competitorAnalysis.opportunities.map((opp: string, i: number) => (
+                <li key={i} className="text-blue-100 text-sm">• {opp}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Threats */}
+        {competitorAnalysis.threats?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <p className="text-blue-300 text-xs font-medium mb-2">⚠️ Threats</p>
+            <ul className="flex flex-col gap-1">
+              {competitorAnalysis.threats.map((threat: string, i: number) => (
+                <li key={i} className="text-blue-100 text-sm">• {threat}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Competitor News */}
+        {competitorAnalysis.news?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4">
+            <p className="text-blue-300 text-xs font-medium mb-2">📰 Competitor News</p>
+            <div className="flex flex-col gap-2">
+              {competitorAnalysis.news.map((item: any, i: number) => (
+                <div key={i} className="bg-white/10 rounded-lg p-3">
+                  <p className="text-white text-xs font-medium">{item.competitor}: {item.headline}</p>
+                  <p className="text-blue-300 text-xs mt-1">💡 {item.implication}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    ) : (
+      <p className="text-blue-300 text-sm">Click "Analyze" to see how your traffic compares to competitors and get strategic recommendations.</p>
+    )}
+  </div>
+)}
 
         {/* Prediction Accuracy */}
         {accuracy && (
