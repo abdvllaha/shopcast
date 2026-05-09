@@ -55,7 +55,7 @@ const [competitorAnalysis, setCompetitorAnalysis] = useState<any>(null)
 const [loadingCompetitors, setLoadingCompetitors] = useState(false)
 const [adOptimization, setAdOptimization] = useState<any>(null)
 const [loadingAds, setLoadingAds] = useState(false)
-const [googleAdsConnected, setGoogleAdsConnected] = useState(false)
+const [googleAdsConnected, setGoogleAdsConnected] = useState(true)
 const [metaAdsConnected, setMetaAdsConnected] = useState(false)
   const router = useRouter()
 
