@@ -20,10 +20,9 @@ export default function Settings() {
   const [newCompetitorCity, setNewCompetitorCity] = useState('')
   const [addingCompetitor, setAddingCompetitor] = useState(false)
   const [googleAdsConnected, setGoogleAdsConnected] = useState(false)
-const [googleAdsCustomerId, setGoogleAdsCustomerId] = useState('')
-const [savingAdsSettings, setSavingAdsSettings] = useState(false)
-const [minBudget, setMinBudget] = useState('10')
-const [maxBudget, setMaxBudget] = useState('100')
+  const [savingAdsSettings, setSavingAdsSettings] = useState(false)
+  const [minBudget, setMinBudget] = useState('10')
+  const [maxBudget, setMaxBudget] = useState('100')
   const router = useRouter()
 
   useEffect(() => {
@@ -35,7 +34,6 @@ const [maxBudget, setMaxBudget] = useState('100')
 
       const { data: stores } = await supabase
         .from('stores').select('*').eq('user_id', session.user.id).single()
-
       if (stores) {
         setStoreName(stores.store_name)
         setAddress(stores.address)
@@ -48,7 +46,6 @@ const [maxBudget, setMaxBudget] = useState('100')
         .from('competitors').select('*').eq('user_id', session.user.id)
       if (comps) setCompetitors(comps)
 
-        // Check if Google Ads just connected
       const urlParams = new URLSearchParams(window.location.search)
       if (urlParams.get('google_ads_connected') === 'true') {
         const accessToken = urlParams.get('access_token')
@@ -65,8 +62,13 @@ const [maxBudget, setMaxBudget] = useState('100')
       } else {
         const { data: adsToken } = await supabase
           .from('google_ads_tokens').select('*').eq('user_id', session.user.id).single()
-        if (adsToken) setGoogleAdsConnected(true)
+        if (adsToken) {
+          setGoogleAdsConnected(true)
+          if (adsToken.min_budget) setMinBudget(adsToken.min_budget.toString())
+          if (adsToken.max_budget) setMaxBudget(adsToken.max_budget.toString())
+        }
       }
+
       setLoading(false)
     }
     load()
@@ -96,8 +98,7 @@ const [maxBudget, setMaxBudget] = useState('100')
     setAddingCompetitor(true)
     const supabase = createClient()
     const { data, error } = await supabase.from('competitors').insert({
-      user_id: userId,
-      store_id: storeId,
+      user_id: userId, store_id: storeId,
       competitor_name: newCompetitorName,
       address: newCompetitorAddress,
       city: newCompetitorCity
@@ -136,10 +137,8 @@ const [maxBudget, setMaxBudget] = useState('100')
         <div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
           <h1 className="text-2xl font-bold text-blue-900 mb-2">Store Settings</h1>
           <p className="text-gray-500 mb-6">Update your store details to improve your predictions</p>
-
           {error && <div className="bg-red-50 text-red-600 rounded-lg p-3 mb-4 text-sm">{error}</div>}
           {saved && <div className="bg-green-50 text-green-600 rounded-lg p-3 mb-4 text-sm">✅ Settings saved successfully</div>}
-
           <div className="flex flex-col gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Store Name</label>
@@ -170,10 +169,9 @@ const [maxBudget, setMaxBudget] = useState('100')
         </div>
 
         {/* Competitors */}
-        <div className="bg-white rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
           <h2 className="text-xl font-bold text-blue-900 mb-2">🏪 Competitors</h2>
           <p className="text-gray-500 mb-6">Add up to 5 competitors to track and compare traffic</p>
-
           {competitors.length > 0 && (
             <div className="flex flex-col gap-3 mb-6">
               {competitors.map(comp => (
@@ -188,7 +186,6 @@ const [maxBudget, setMaxBudget] = useState('100')
               ))}
             </div>
           )}
-
           {competitors.length < 5 && (
             <div className="flex flex-col gap-3">
               <p className="text-sm font-medium text-gray-700">Add a competitor ({competitors.length}/5)</p>
@@ -207,80 +204,78 @@ const [maxBudget, setMaxBudget] = useState('100')
               </button>
             </div>
           )}
-
           {competitors.length === 5 && (
             <p className="text-gray-500 text-sm text-center">Maximum 5 competitors reached</p>
           )}
         </div>
-      </div>
-{/* Google Ads Connection */}
-<div className="bg-white rounded-2xl p-8 shadow-2xl mt-6">
-  <h2 className="text-xl font-bold text-blue-900 mb-2">🎯 Google Ads</h2>
-  <p className="text-gray-500 mb-6">Connect your Google Ads account so ShopCast can automatically adjust your budget based on predicted traffic</p>
-  
-  {googleAdsConnected ? (
-    <div>
-      <div className="bg-green-50 rounded-xl p-4 mb-6 flex items-center gap-3">
-        <span className="text-green-500 text-2xl">✅</span>
-        <div>
-          <p className="text-green-800 font-medium">Google Ads Connected</p>
-          <p className="text-green-600 text-sm">ShopCast can now optimize your ad budget automatically</p>
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-4 mb-6">
-        <p className="text-sm font-medium text-gray-700">Set your daily budget limits:</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Minimum daily budget ($)</label>
-            <input type="number" value={minBudget} onChange={e => setMinBudget(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Maximum daily budget ($)</label>
-            <input type="number" value={maxBudget} onChange={e => setMaxBudget(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
+        {/* Google Ads */}
+        <div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
+          <h2 className="text-xl font-bold text-blue-900 mb-2">🎯 Google Ads</h2>
+          <p className="text-gray-500 mb-6">Connect your Google Ads account so ShopCast can automatically adjust your budget based on predicted traffic</p>
+          {googleAdsConnected ? (
+            <div>
+              <div className="bg-green-50 rounded-xl p-4 mb-6 flex items-center gap-3">
+                <span className="text-green-500 text-2xl">✅</span>
+                <div>
+                  <p className="text-green-800 font-medium">Google Ads Connected</p>
+                  <p className="text-green-600 text-sm">ShopCast can now optimize your ad budget automatically</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 mb-6">
+                <p className="text-sm font-medium text-gray-700">Set your daily budget limits:</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-600 mb-1 block">Minimum daily budget ($)</label>
+                    <input type="number" value={minBudget} onChange={e => setMinBudget(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600 mb-1 block">Maximum daily budget ($)</label>
+                    <input type="number" value={maxBudget} onChange={e => setMaxBudget(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">ShopCast will never spend outside these limits. On high-traffic days it moves toward the max, on slow days toward the min.</p>
+                <button onClick={async () => {
+                  setSavingAdsSettings(true)
+                  const supabase = createClient()
+                  await supabase.from('google_ads_tokens').update({
+                    min_budget: parseFloat(minBudget),
+                    max_budget: parseFloat(maxBudget)
+                  }).eq('user_id', userId)
+                  setSavingAdsSettings(false)
+                }} className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
+                  {savingAdsSettings ? 'Saving...' : 'Save Budget Settings'}
+                </button>
+              </div>
+              <button onClick={async () => {
+                const supabase = createClient()
+                await supabase.from('google_ads_tokens').delete().eq('user_id', userId)
+                setGoogleAdsConnected(false)
+              }} className="text-red-400 hover:text-red-600 text-sm transition">
+                Disconnect Google Ads
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                <p className="text-blue-800 text-sm font-medium mb-2">How it works:</p>
+                <ul className="text-blue-700 text-sm space-y-1">
+                  <li>• High traffic predicted → budget increases toward your maximum</li>
+                  <li>• Slow day predicted → budget reduces to your minimum</li>
+                  <li>• You set the limits — ShopCast never exceeds them</li>
+                </ul>
+              </div>
+              <a href="/api/google-ads/connect"
+                className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
+                🔗 Connect Google Ads Account
+              </a>
+            </div>
+          )}
         </div>
-        <p className="text-xs text-gray-400">ShopCast will never spend outside these limits. On high-traffic days it moves toward the max, on slow days toward the min.</p>
-        <button onClick={async () => {
-          setSavingAdsSettings(true)
-          const supabase = createClient()
-          await supabase.from('google_ads_tokens').update({
-            min_budget: parseFloat(minBudget),
-            max_budget: parseFloat(maxBudget)
-          }).eq('user_id', userId)
-          setSavingAdsSettings(false)
-        }} className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
-          {savingAdsSettings ? 'Saving...' : 'Save Budget Settings'}
-        </button>
-      </div>
 
-      <button onClick={async () => {
-        const supabase = createClient()
-        await supabase.from('google_ads_tokens').delete().eq('user_id', userId)
-        setGoogleAdsConnected(false)
-      }} className="text-red-400 hover:text-red-600 text-sm transition">
-        Disconnect Google Ads
-      </button>
-    </div>
-  ) : (
-    <div>
-      <div className="bg-blue-50 rounded-xl p-4 mb-6">
-        <p className="text-blue-800 text-sm font-medium mb-2">How it works:</p>
-        <ul className="text-blue-700 text-sm space-y-1">
-          <li>• High traffic predicted → budget increases toward your maximum</li>
-          <li>• Slow day predicted → budget reduces to your minimum</li>
-          <li>• You set the limits — ShopCast never exceeds them</li>
-        </ul>
       </div>
-      <a href="/api/google-ads/connect"
-        className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
-        🔗 Connect Google Ads Account
-      </a>
-    </div>
-  )}
-</div>
     </main>
   )
 }
