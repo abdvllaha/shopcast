@@ -1,11 +1,11 @@
 export async function POST(request) {
-  const { websiteUrl, store } = await request.json()
-
-  if (!websiteUrl) {
-    return Response.json({ error: 'No website URL provided' }, { status: 400 })
-  }
-
   try {
+    const { websiteUrl, store } = await request.json()
+
+    if (!websiteUrl) {
+      return Response.json({ error: 'No website URL provided' }, { status: 400 })
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -19,31 +19,35 @@ export async function POST(request) {
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{
           role: 'user',
-          content: `Search for the following about this retail store website: ${websiteUrl}
+          content: `Search for information about this retail store: "${store.store_name}" located in ${store.city}. Also search for their website: ${websiteUrl}
 
-For the store "${store.store_name}" in ${store.city}, find:
-1. Current promotions and sales on their website
-2. Their current pricing and product range
-3. Recent social media activity and mentions (Facebook, Instagram, Google reviews)
-4. Customer sentiment and reviews
-5. Estimated website traffic and online presence strength
-6. How their online presence compares to typical ${store.store_type} retailers
+Find:
+1. Current promotions or sales
+2. Customer reviews and sentiment
+3. Their online presence strength
+4. Price range of products
 
-Respond with ONLY this JSON object:
+Respond with ONLY this JSON object and nothing else:
 {
-  "promotions": ["current promotion 1", "current promotion 2"],
-  "priceRange": "budget/mid-range/premium",
-  "onlinePresence": "weak/moderate/strong",
-  "socialSentiment": "positive/neutral/negative",
-  "sentimentSummary": "one sentence on customer sentiment",
-  "trafficEstimate": "low/medium/high",
-  "topProducts": ["product or category 1", "product or category 2"],
-  "opportunities": ["opportunity based on their online gaps 1", "opportunity 2"],
-  "summary": "2 sentence summary of their online presence and what it means for your store"
+  "promotions": ["promotion 1", "promotion 2"],
+  "priceRange": "budget",
+  "onlinePresence": "moderate",
+  "socialSentiment": "positive",
+  "sentimentSummary": "customers seem happy with the store",
+  "trafficEstimate": "medium",
+  "topProducts": ["product 1", "product 2"],
+  "opportunities": ["opportunity 1", "opportunity 2"],
+  "summary": "two sentence summary here"
 }`
         }]
       })
     })
+
+    if (!response.ok) {
+      const errData = await response.json()
+      console.error('Anthropic error:', JSON.stringify(errData))
+      return Response.json({ error: 'AI error', details: errData }, { status: 500 })
+    }
 
     const data = await response.json()
     const allText = data.content
@@ -51,9 +55,22 @@ Respond with ONLY this JSON object:
       ?.map(b => b.text)
       ?.join('') || ''
 
+    console.log('Website scanner response:', allText.substring(0, 200))
+
     const jsonMatch = allText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return Response.json({ error: 'Could not analyze website' }, { status: 500 })
+      console.error('No JSON found in response:', allText)
+      return Response.json({ 
+        promotions: [],
+        priceRange: 'unknown',
+        onlinePresence: 'moderate',
+        socialSentiment: 'neutral',
+        sentimentSummary: 'Unable to analyze sentiment',
+        trafficEstimate: 'medium',
+        topProducts: [],
+        opportunities: [],
+        summary: 'Could not fully analyze this website. Try again.'
+      })
     }
 
     const parsed = JSON.parse(jsonMatch[0])
