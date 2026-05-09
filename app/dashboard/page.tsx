@@ -53,6 +53,10 @@ export default function Dashboard() {
   const [competitors, setCompetitors] = useState<any[]>([])
 const [competitorAnalysis, setCompetitorAnalysis] = useState<any>(null)
 const [loadingCompetitors, setLoadingCompetitors] = useState(false)
+const [adOptimization, setAdOptimization] = useState<any>(null)
+const [loadingAds, setLoadingAds] = useState(false)
+const [googleAdsConnected, setGoogleAdsConnected] = useState(false)
+const [metaAdsConnected, setMetaAdsConnected] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -94,6 +98,13 @@ const [loadingCompetitors, setLoadingCompetitors] = useState(false)
           const { data: comps } = await supabase
           .from('competitors').select('*').eq('user_id', session.user.id)
         if (comps) setCompetitors(comps)
+          const { data: googleToken } = await supabase
+          .from('google_ads_tokens').select('id').eq('user_id', session.user.id).single()
+        if (googleToken) setGoogleAdsConnected(true)
+
+        const { data: metaToken } = await supabase
+          .from('meta_ads_tokens').select('id').eq('user_id', session.user.id).single()
+        if (metaToken) setMetaAdsConnected(true)
 
         const [weatherRes, eventsRes, trafficRes] = await Promise.all([
           fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
@@ -144,6 +155,19 @@ const [loadingCompetitors, setLoadingCompetitors] = useState(false)
       if (!data.error) setCompetitorAnalysis(data)
     } catch (err) { console.error('Competitor error:', err) }
     setLoadingCompetitors(false)
+  }
+  const optimizeAds = async () => {
+    setLoadingAds(true)
+    try {
+      const res = await fetch('/api/optimize-ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, predictions: recentLogs })
+      })
+      const data = await res.json()
+      if (data.success) setAdOptimization(data)
+    } catch (err) { console.error('Ad optimization error:', err) }
+    setLoadingAds(false)
   }
 
   const logTraffic = async (level: string) => {
@@ -442,6 +466,58 @@ const [loadingCompetitors, setLoadingCompetitors] = useState(false)
 
     {competitorAnalysis ? (
       <>
+      {/* Ad Budget Optimization */}
+{(googleAdsConnected || metaAdsConnected) && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <div className="flex justify-between items-center mb-4">
+      <div>
+        <h2 className="text-white font-bold text-lg">🎯 Ad Budget Optimization</h2>
+        <p className="text-blue-300 text-sm mt-1">
+          {[googleAdsConnected && 'Google Ads', metaAdsConnected && 'Meta Ads'].filter(Boolean).join(' + ')} connected
+        </p>
+      </div>
+      <button onClick={optimizeAds} disabled={loadingAds}
+        className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
+        {loadingAds ? 'Optimizing...' : adOptimization ? '🔄 Refresh' : 'Optimize'}
+      </button>
+    </div>
+
+    {adOptimization ? (
+      <>
+        <div className={`rounded-xl p-4 mb-4 ${
+          adOptimization.recommendedLevel === 'busy' ? 'bg-green-500/20' :
+          adOptimization.recommendedLevel === 'slow' ? 'bg-red-500/20' : 'bg-yellow-500/20'
+        }`}>
+          <p className="text-white text-sm font-medium">
+            {adOptimization.recommendedLevel === 'busy' && '🔥 High traffic week — maximize your ad spend'}
+            {adOptimization.recommendedLevel === 'normal' && '📊 Normal traffic week — moderate ad spend recommended'}
+            {adOptimization.recommendedLevel === 'slow' && '📉 Slow week predicted — reduce ad spend to save budget'}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {adOptimization.results?.map((result: any, i: number) => (
+            <div key={i} className="bg-white/10 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-white font-medium text-sm">
+                  {result.platform === 'Google Ads' ? '🔍' : '📘'} {result.platform}
+                </p>
+                <p className="text-white font-bold text-lg">${result.recommended_budget.toFixed(2)}/day</p>
+              </div>
+              <p className="text-blue-300 text-xs">{result.reason}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 bg-white/10 rounded-xl p-3">
+          <p className="text-blue-300 text-xs">💡 These are ShopCast's recommendations based on predicted traffic. Go to Settings to adjust your min/max budget limits or to apply these budgets to your accounts.</p>
+        </div>
+      </>
+    ) : (
+      <p className="text-blue-300 text-sm">Click "Optimize" to get AI-powered ad budget recommendations based on this week's traffic predictions.</p>
+    )}
+  </div>
+)}
         {/* Traffic Comparison */}
         <div className="flex flex-col gap-2 mb-4">
           <p className="text-blue-300 text-xs font-medium">🚗 Current Road Traffic Comparison</p>
