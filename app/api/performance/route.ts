@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
+  const storeId = searchParams.get('storeId')
 
   if (!userId) {
     return Response.json({ message: 'No user ID provided' })
@@ -13,12 +14,18 @@ export async function GET(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const { data: logs, error } = await supabase
+  let query = supabase
     .from('traffic_logs')
     .select('*')
     .eq('user_id', userId)
     .order('log_date', { ascending: false })
     .limit(30)
+
+  if (storeId) {
+    query = query.eq('store_id', storeId)
+  }
+
+  const { data: logs, error } = await query
 
   if (error) {
     return Response.json({ message: 'No data yet', error: error.message })
@@ -43,10 +50,7 @@ export async function GET(request: Request) {
   const busiestDay = Object.entries(dayCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
 
   return Response.json({
-    total,
-    slow,
-    normal,
-    busy,
+    total, slow, normal, busy,
     slowPct: Math.round((slow / total) * 100),
     normalPct: Math.round((normal / total) * 100),
     busyPct: Math.round((busy / total) * 100),

@@ -80,16 +80,16 @@ export default function Dashboard() {
 
         const today = new Date().toISOString().split('T')[0]
         const { data: todayData } = await supabase
-          .from('traffic_logs').select('*').eq('user_id', session.user.id).eq('log_date', today).single()
+          .from('traffic_logs').select('*').eq('store_id', currentStore.id).eq('log_date', today).single()
         if (todayData) setTodayLog(todayData.traffic_level)
 
         const { data: logs } = await supabase
-          .from('traffic_logs').select('*').eq('user_id', session.user.id)
+          .from('traffic_logs').select('*').eq('store_id', currentStore.id)
           .order('log_date', { ascending: false }).limit(7)
         if (logs) setRecentLogs(logs)
 
         const { data: sales } = await supabase
-          .from('sales_history').select('*').eq('user_id', session.user.id)
+          .from('sales_history').select('*').eq('store_id', currentStore.id)
           .order('sale_date', { ascending: false }).limit(365)
         if (sales) setSalesHistory(sales)
 
@@ -97,7 +97,7 @@ export default function Dashboard() {
         const perfData = await perfRes.json()
         if (perfData.total) setPerformance(perfData)
 
-        const accRes = await fetch(`/api/accuracy?userId=${session.user.id}`)
+        const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${currentStore.id}`)
         const accData = await accRes.json()
         if (accData.accuracy !== undefined) setAccuracy(accData)
 
@@ -245,7 +245,7 @@ export default function Dashboard() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: session.user.id, storeId: store.id, predictions: data.predictions })
             })
-            const accRes = await fetch(`/api/accuracy?userId=${session.user.id}`)
+const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${store?.id}`)
             const accData = await accRes.json()
             if (accData.accuracy !== undefined) setAccuracy(accData)
           }

@@ -3,25 +3,34 @@ import { createClient } from '@supabase/supabase-js'
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
+  const storeId = searchParams.get('storeId')
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   )
 
-  const { data: predictions } = await supabase
+  let predQuery = supabase
     .from('predictions')
     .select('*')
     .eq('user_id', userId)
     .order('prediction_date', { ascending: false })
     .limit(30)
 
-  const { data: logs } = await supabase
+  let logQuery = supabase
     .from('traffic_logs')
     .select('*')
     .eq('user_id', userId)
     .order('log_date', { ascending: false })
     .limit(30)
+
+  if (storeId) {
+    predQuery = predQuery.eq('store_id', storeId)
+    logQuery = logQuery.eq('store_id', storeId)
+  }
+
+  const { data: predictions } = await predQuery
+  const { data: logs } = await logQuery
 
   if (!predictions || !logs || predictions.length === 0 || logs.length === 0) {
     return Response.json({ message: 'Not enough data yet' })
