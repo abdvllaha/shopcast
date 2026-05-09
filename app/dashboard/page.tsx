@@ -671,9 +671,9 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
                 <div className="mt-3 flex flex-col gap-1">
                   <p className="text-blue-300 text-xs font-medium">Day-by-day budget:</p>
                   {result.dayBreakdown.map((day: any, j: number) => (
-                    <div key={j} className="flex justify-between text-xs">
+                    <div key={j} className="flex justify-between items-center text-xs py-1 border-b border-white/10">
                       <span className="text-blue-300">{day.date}</span>
-                      <span className="text-white font-medium">${parseFloat(day.budget).toFixed(2)}</span>
+                      <span className="text-white font-medium">${parseFloat(day.budget).toFixed(2)}/day</span>
                     </div>
                   ))}
                 </div>
