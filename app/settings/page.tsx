@@ -103,7 +103,7 @@ export default function Settings() {
     load()
   }, [])
 
-  const selectStore = (s: any) => {
+  const selectStore = async (s: any) => {
     setSelectedStore(s)
     setStoreName(s.store_name)
     setAddress(s.address)
@@ -111,6 +111,10 @@ export default function Settings() {
     setStoreType(s.store_type)
     setSaved(false)
     setError('')
+    const supabase = createClient()
+    const { data: comps } = await supabase
+      .from('competitors').select('*').eq('store_id', s.id)
+    setCompetitors(comps || [])
   }
 
   const handleSave = async () => {
