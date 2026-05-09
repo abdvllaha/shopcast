@@ -362,6 +362,15 @@ const [metaMaxBudget, setMetaMaxBudget] = useState('100')
     </div>
   )}
 </div> 
+{/* Add New Store */}
+<div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
+  <h2 className="text-xl font-bold text-blue-900 mb-2">🏪 Add Another Store</h2>
+  <p className="text-gray-500 mb-6">Manage multiple locations from one account</p>
+  <a href="/setup"
+    className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
+    + Add New Store Location
+  </a>
+</div>
 
       </div>
     </main>
