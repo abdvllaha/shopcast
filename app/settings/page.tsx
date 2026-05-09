@@ -125,7 +125,7 @@ const [maxBudget, setMaxBudget] = useState('100')
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-6">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button onClick={() => router.push('/dashboard')} className="text-blue-200 hover:text-white transition">
             ← Back to Dashboard
