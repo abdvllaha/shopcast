@@ -71,11 +71,10 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         setUserId(session.user.id)
 
         const { data: storesData, error: storeError } = await supabase
-          .from('stores').select('*').eq('user_id', session.user.id).order('created_at', { ascending: true })
+          .from('stores').select('*').eq('user_id', session.user.id)
         if (storeError || !storesData || storesData.length === 0) { router.push('/setup'); return }
         setAllStores(storesData)
-        const activeStore = storesData[0]
-        setStore(activeStore)
+        setStore(storesData[0])
 
         const today = new Date().toISOString().split('T')[0]
         const { data: todayData } = await supabase
