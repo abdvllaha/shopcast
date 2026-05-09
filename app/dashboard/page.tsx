@@ -146,6 +146,36 @@ export default function Dashboard() {
     setWeather(null)
     setEvents([])
     setRoadTraffic(null)
+    setTodayLog(null)
+    setRecentLogs([])
+    setPerformance(null)
+    setAccuracy(null)
+    setSalesHistory([])
+
+    const supabase = createClient()
+    const today = new Date().toISOString().split('T')[0]
+    
+    const { data: todayData } = await supabase
+      .from('traffic_logs').select('*').eq('store_id', newStore.id).eq('log_date', today).single()
+    if (todayData) setTodayLog(todayData.traffic_level)
+
+    const { data: logs } = await supabase
+      .from('traffic_logs').select('*').eq('store_id', newStore.id)
+      .order('log_date', { ascending: false }).limit(7)
+    if (logs) setRecentLogs(logs)
+
+    const { data: sales } = await supabase
+      .from('sales_history').select('*').eq('store_id', newStore.id)
+      .order('sale_date', { ascending: false }).limit(365)
+    if (sales) setSalesHistory(sales)
+
+    const perfRes = await fetch(`/api/performance?userId=${userId}&storeId=${newStore.id}`)
+    const perfData = await perfRes.json()
+    if (perfData.total) setPerformance(perfData)
+
+    const accRes = await fetch(`/api/accuracy?userId=${userId}&storeId=${newStore.id}`)
+    const accData = await accRes.json()
+    if (accData.accuracy !== undefined) setAccuracy(accData)
 
     const [weatherRes, eventsRes, trafficRes] = await Promise.all([
       fetch(`/api/weather?city=${encodeURIComponent(newStore.city)}`),
