@@ -189,6 +189,25 @@ export default function Settings() {
           )}
         </div>
       </div>
+      {/* Google Ads Connection */}
+<div className="bg-white rounded-2xl p-8 shadow-2xl mt-6">
+  <h2 className="text-xl font-bold text-blue-900 mb-2">🎯 Google Ads</h2>
+  <p className="text-gray-500 mb-6">Connect your Google Ads account so ShopCast can automatically adjust your budget based on predicted traffic</p>
+  
+  <div className="bg-blue-50 rounded-xl p-4 mb-6">
+    <p className="text-blue-800 text-sm font-medium mb-2">How it works:</p>
+    <ul className="text-blue-700 text-sm space-y-1">
+      <li>• ShopCast predicts a high traffic day → automatically increases your ad budget</li>
+      <li>• ShopCast predicts a slow day → reduces ad spend to save money</li>
+      <li>• You stay in control — set min/max budget limits</li>
+    </ul>
+  </div>
+
+  <a href="/api/google-ads/connect"
+    className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
+    🔗 Connect Google Ads Account
+  </a>
+</div>
     </main>
   )
 }
