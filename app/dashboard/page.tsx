@@ -17,7 +17,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export default function Dashboard() {
   const [store, setStore] = useState<any>(null)
   const [allStores, setAllStores] = useState<any[]>([])
-const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
+  const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
   const [weather, setWeather] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,12 +53,12 @@ const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [competitors, setCompetitors] = useState<any[]>([])
-const [competitorAnalysis, setCompetitorAnalysis] = useState<any>(null)
-const [loadingCompetitors, setLoadingCompetitors] = useState(false)
-const [adOptimization, setAdOptimization] = useState<any>(null)
-const [loadingAds, setLoadingAds] = useState(false)
-const [googleAdsConnected, setGoogleAdsConnected] = useState(false)
-const [metaAdsConnected, setMetaAdsConnected] = useState(false)
+  const [competitorAnalysis, setCompetitorAnalysis] = useState<any>(null)
+  const [loadingCompetitors, setLoadingCompetitors] = useState(false)
+  const [adOptimization, setAdOptimization] = useState<any>(null)
+  const [loadingAds, setLoadingAds] = useState(false)
+  const [googleAdsConnected, setGoogleAdsConnected] = useState(false)
+  const [metaAdsConnected, setMetaAdsConnected] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -70,11 +70,13 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         setUserEmail(session.user.email ?? '')
         setUserId(session.user.id)
 
-        const { data: storesData, error: storeError } = await supabase
+        const { data: storesData } = await supabase
           .from('stores').select('*').eq('user_id', session.user.id)
-        if (storeError || !storesData || storesData.length === 0) { router.push('/setup'); return }
+        
+        if (!storesData || storesData.length === 0) { router.push('/setup'); return }
         setAllStores(storesData)
-        setStore(storesData[0])
+        const currentStore = storesData[0]
+        setStore(currentStore)
 
         const today = new Date().toISOString().split('T')[0]
         const { data: todayData } = await supabase
@@ -98,22 +100,24 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         const accRes = await fetch(`/api/accuracy?userId=${session.user.id}`)
         const accData = await accRes.json()
         if (accData.accuracy !== undefined) setAccuracy(accData)
-          const { data: comps } = await supabase
+
+        const { data: comps } = await supabase
           .from('competitors').select('*').eq('user_id', session.user.id)
         if (comps) setCompetitors(comps)
-          const { data: googleToken } = await supabase
+
+        const { data: googleToken } = await supabase
           .from('google_ads_tokens').select('id').eq('user_id', session.user.id)
+        console.log('Google token check:', googleToken)
         if (googleToken && googleToken.length > 0) setGoogleAdsConnected(true)
-          console.log('Google token check:', googleToken)
 
         const { data: metaToken } = await supabase
           .from('meta_ads_tokens').select('id').eq('user_id', session.user.id)
         if (metaToken && metaToken.length > 0) setMetaAdsConnected(true)
 
         const [weatherRes, eventsRes, trafficRes] = await Promise.all([
-          fetch(`/api/weather?city=${encodeURIComponent(store.city)}`),
-          fetch(`/api/events?city=${encodeURIComponent(store.city)}`),
-          fetch(`/api/road-traffic?address=${encodeURIComponent(store.address)}&city=${encodeURIComponent(store.city)}`)
+          fetch(`/api/weather?city=${encodeURIComponent(currentStore.city)}`),
+          fetch(`/api/events?city=${encodeURIComponent(currentStore.city)}`),
+          fetch(`/api/road-traffic?address=${encodeURIComponent(currentStore.address)}&city=${encodeURIComponent(currentStore.city)}`)
         ])
 
         const weatherData = await weatherRes.json()
@@ -125,12 +129,38 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         if (trafficData.trafficLevel) setRoadTraffic(trafficData)
         setLoading(false)
       } catch (err) {
+        console.error('Dashboard load error:', err)
         setError('Something went wrong loading your dashboard.')
         setLoading(false)
       }
     }
     load()
   }, [])
+
+  const switchStore = async (newStore: any) => {
+    setStore(newStore)
+    setShowStoreSwitcher(false)
+    setPrediction('')
+    setAdOptimization(null)
+    setCompetitorAnalysis(null)
+    setWeather(null)
+    setEvents([])
+    setRoadTraffic(null)
+
+    const [weatherRes, eventsRes, trafficRes] = await Promise.all([
+      fetch(`/api/weather?city=${encodeURIComponent(newStore.city)}`),
+      fetch(`/api/events?city=${encodeURIComponent(newStore.city)}`),
+      fetch(`/api/road-traffic?address=${encodeURIComponent(newStore.address)}&city=${encodeURIComponent(newStore.city)}`)
+    ])
+
+    const weatherData = await weatherRes.json()
+    const eventsData = await eventsRes.json()
+    const trafficData = await trafficRes.json()
+
+    setWeather(weatherData)
+    setEvents(eventsData.events || [])
+    if (trafficData.trafficLevel) setRoadTraffic(trafficData)
+  }
 
   const loadTrends = async () => {
     setLoadingTrends(true)
@@ -151,6 +181,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
     } catch (err) { console.error('Demographics error:', err) }
     setLoadingDemographics(false)
   }
+
   const loadCompetitorAnalysis = async () => {
     setLoadingCompetitors(true)
     try {
@@ -160,6 +191,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
     } catch (err) { console.error('Competitor error:', err) }
     setLoadingCompetitors(false)
   }
+
   const optimizeAds = async () => {
     setLoadingAds(true)
     try {
@@ -211,11 +243,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
             await fetch('/api/accuracy', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId: session.user.id,
-                storeId: store.id,
-                predictions: data.predictions
-              })
+              body: JSON.stringify({ userId: session.user.id, storeId: store.id, predictions: data.predictions })
             })
             const accRes = await fetch(`/api/accuracy?userId=${session.user.id}`)
             const accData = await accRes.json()
@@ -223,9 +251,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
           }
         }
       }
-    } catch (err: any) {
-      setPrediction('Error: ' + err.message)
-    }
+    } catch (err: any) { setPrediction('Error: ' + err.message) }
     setPredicting(false)
   }
 
@@ -279,29 +305,23 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         <div className="flex justify-between items-center mb-8">
           <div className="relative">
             <h1 className="text-white text-2xl font-bold">ShopCast</h1>
-            <button 
-              onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
+            <button onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
               className="text-blue-200 hover:text-white transition flex items-center gap-1">
               {store?.store_name} · {store?.city}
-              {allStores.length > 1 && <span className="text-xs">▼</span>}
+              {allStores.length > 1 && <span className="text-xs ml-1">▼</span>}
             </button>
-            {showStoreSwitcher && allStores.length > 1 && (
-              <div className="absolute top-12 left-0 bg-white rounded-xl shadow-2xl p-2 z-50 min-w-64">
+            {showStoreSwitcher && (
+              <div className="absolute top-14 left-0 bg-white rounded-xl shadow-2xl p-2 z-50 min-w-64">
                 {allStores.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => { setStore(s); setShowStoreSwitcher(false); setPrediction(''); setAdOptimization(null); setCompetitorAnalysis(null) }}
-                    className={`w-full text-left px-4 py-3 rounded-lg text-sm transition ${store?.id === s.id ? 'bg-blue-50 text-blue-900 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                  >
+                  <button key={s.id} onClick={() => switchStore(s)}
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm transition ${store?.id === s.id ? 'bg-blue-50 text-blue-900 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>
                     <p className="font-medium">{s.store_name}</p>
                     <p className="text-gray-500 text-xs">{s.address}, {s.city}</p>
                   </button>
                 ))}
                 <div className="border-t border-gray-100 mt-2 pt-2">
-                  <button
-                    onClick={() => { setShowStoreSwitcher(false); router.push('/setup') }}
-                    className="w-full text-left px-4 py-3 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition font-medium"
-                  >
+                  <button onClick={() => { setShowStoreSwitcher(false); router.push('/setup') }}
+                    className="w-full text-left px-4 py-3 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition font-medium">
                     + Add New Store
                   </button>
                 </div>
@@ -481,150 +501,132 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
             <p className="text-blue-300 text-sm">Click "Load Demographics" to see income and customer profile data for your store's area.</p>
           )}
         </div>
+
         {/* Competitor Analysis */}
-{competitors.length > 0 && (
-  <div className="bg-white/10 rounded-2xl p-6 mb-6">
-    <div className="flex justify-between items-center mb-4">
-      <div>
-        <h2 className="text-white font-bold text-lg">🏪 Competitor Analysis</h2>
-        <p className="text-blue-300 text-sm mt-1">Tracking {competitors.length} competitor{competitors.length > 1 ? 's' : ''}</p>
-      </div>
-      <button onClick={loadCompetitorAnalysis} disabled={loadingCompetitors}
-        className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
-        {loadingCompetitors ? 'Analyzing...' : competitorAnalysis ? '🔄 Refresh' : 'Analyze'}
-      </button>
-    </div>
-
-    {competitorAnalysis ? (
-      <>
-      {/* placeholder */}
-{false && (
-  <div className="bg-white/10 rounded-2xl p-6 mb-6">
-    <div className="flex justify-between items-center mb-4">
-      <div>
-        <h2 className="text-white font-bold text-lg">🎯 Ad Budget Optimization</h2>
-        <p className="text-blue-300 text-sm mt-1">
-          {[googleAdsConnected && 'Google Ads', metaAdsConnected && 'Meta Ads'].filter(Boolean).join(' + ')} connected
-        </p>
-      </div>
-      <button onClick={optimizeAds} disabled={loadingAds}
-        className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
-        {loadingAds ? 'Optimizing...' : adOptimization ? '🔄 Refresh' : 'Optimize'}
-      </button>
-    </div>
-
-    {adOptimization ? (
-      <>
-        <div className={`rounded-xl p-4 mb-4 ${
-          adOptimization.recommendedLevel === 'busy' ? 'bg-green-500/20' :
-          adOptimization.recommendedLevel === 'slow' ? 'bg-red-500/20' : 'bg-yellow-500/20'
-        }`}>
-          <p className="text-white text-sm font-medium">
-            {adOptimization.recommendedLevel === 'busy' && '🔥 High traffic week — maximize your ad spend'}
-            {adOptimization.recommendedLevel === 'normal' && '📊 Normal traffic week — moderate ad spend recommended'}
-            {adOptimization.recommendedLevel === 'slow' && '📉 Slow week predicted — reduce ad spend to save budget'}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {adOptimization.results?.map((result: any, i: number) => (
-            <div key={i} className="bg-white/10 rounded-xl p-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-white font-medium text-sm">
-                  {result.platform === 'Google Ads' ? '🔍' : '📘'} {result.platform}
-                </p>
-                <p className="text-white font-bold text-lg">${result.recommended_budget.toFixed(2)}/day</p>
+        {competitors.length > 0 && (
+          <div className="bg-white/10 rounded-2xl p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-white font-bold text-lg">🏪 Competitor Analysis</h2>
+                <p className="text-blue-300 text-sm mt-1">Tracking {competitors.length} competitor{competitors.length > 1 ? 's' : ''}</p>
               </div>
-              <p className="text-blue-300 text-xs">{result.reason}</p>
+              <button onClick={loadCompetitorAnalysis} disabled={loadingCompetitors}
+                className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
+                {loadingCompetitors ? 'Analyzing...' : competitorAnalysis ? '🔄 Refresh' : 'Analyze'}
+              </button>
             </div>
-          ))}
-        </div>
-
-        <div className="mt-4 bg-white/10 rounded-xl p-3">
-          <p className="text-blue-300 text-xs">💡 These are ShopCast's recommendations based on predicted traffic. Go to Settings to adjust your min/max budget limits or to apply these budgets to your accounts.</p>
-        </div>
-      </>
-    ) : (
-      <p className="text-blue-300 text-sm">Click "Optimize" to get AI-powered ad budget recommendations based on this week's traffic predictions.</p>
-    )}
-  </div>
-)}
-        {/* Traffic Comparison */}
-        <div className="flex flex-col gap-2 mb-4">
-          <p className="text-blue-300 text-xs font-medium">🚗 Current Road Traffic Comparison</p>
-          <div className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
-            <p className="text-white font-medium text-sm">📍 {store?.store_name} (You)</p>
-            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-              competitorAnalysis.myTraffic?.trafficColor === 'green' ? 'bg-green-500 text-white' :
-              competitorAnalysis.myTraffic?.trafficColor === 'yellow' ? 'bg-yellow-500 text-white' :
-              'bg-red-500 text-white'
-            }`}>{competitorAnalysis.myTraffic?.trafficLabel || 'Unknown'}</span>
-          </div>
-          {competitorAnalysis.competitorTraffic?.map((comp: any, i: number) => (
-            <div key={i} className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
-              <p className="text-blue-200 text-sm">{comp.name}</p>
-              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                comp.traffic?.trafficColor === 'green' ? 'bg-green-500 text-white' :
-                comp.traffic?.trafficColor === 'yellow' ? 'bg-yellow-500 text-white' :
-                comp.traffic?.trafficColor === 'red' ? 'bg-red-500 text-white' :
-                'bg-gray-500 text-white'
-              }`}>{comp.traffic?.trafficLabel || 'No data'}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* AI Summary */}
-        {competitorAnalysis.summary && (
-          <div className="bg-white/10 rounded-xl p-4 mb-4">
-            <p className="text-blue-300 text-xs font-medium mb-2">🤖 AI Analysis</p>
-            <p className="text-blue-100 text-sm">{competitorAnalysis.summary}</p>
-          </div>
-        )}
-
-        {/* Opportunities */}
-        {competitorAnalysis.opportunities?.length > 0 && (
-          <div className="bg-white/10 rounded-xl p-4 mb-4">
-            <p className="text-blue-300 text-xs font-medium mb-2">✅ Opportunities</p>
-            <ul className="flex flex-col gap-1">
-              {competitorAnalysis.opportunities.map((opp: string, i: number) => (
-                <li key={i} className="text-blue-100 text-sm">• {opp}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Threats */}
-        {competitorAnalysis.threats?.length > 0 && (
-          <div className="bg-white/10 rounded-xl p-4 mb-4">
-            <p className="text-blue-300 text-xs font-medium mb-2">⚠️ Threats</p>
-            <ul className="flex flex-col gap-1">
-              {competitorAnalysis.threats.map((threat: string, i: number) => (
-                <li key={i} className="text-blue-100 text-sm">• {threat}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Competitor News */}
-        {competitorAnalysis.news?.length > 0 && (
-          <div className="bg-white/10 rounded-xl p-4">
-            <p className="text-blue-300 text-xs font-medium mb-2">📰 Competitor News</p>
-            <div className="flex flex-col gap-2">
-              {competitorAnalysis.news.map((item: any, i: number) => (
-                <div key={i} className="bg-white/10 rounded-lg p-3">
-                  <p className="text-white text-xs font-medium">{item.competitor}: {item.headline}</p>
-                  <p className="text-blue-300 text-xs mt-1">💡 {item.implication}</p>
+            {competitorAnalysis ? (
+              <>
+                <div className="flex flex-col gap-2 mb-4">
+                  <p className="text-blue-300 text-xs font-medium">🚗 Current Road Traffic Comparison</p>
+                  <div className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
+                    <p className="text-white font-medium text-sm">📍 {store?.store_name} (You)</p>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${competitorAnalysis.myTraffic?.trafficColor === 'green' ? 'bg-green-500 text-white' : competitorAnalysis.myTraffic?.trafficColor === 'yellow' ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'}`}>
+                      {competitorAnalysis.myTraffic?.trafficLabel || 'Unknown'}
+                    </span>
+                  </div>
+                  {competitorAnalysis.competitorTraffic?.map((comp: any, i: number) => (
+                    <div key={i} className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
+                      <p className="text-blue-200 text-sm">{comp.name}</p>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${comp.traffic?.trafficColor === 'green' ? 'bg-green-500 text-white' : comp.traffic?.trafficColor === 'yellow' ? 'bg-yellow-500 text-white' : comp.traffic?.trafficColor === 'red' ? 'bg-red-500 text-white' : 'bg-gray-500 text-white'}`}>
+                        {comp.traffic?.trafficLabel || 'No data'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                {competitorAnalysis.summary && (
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <p className="text-blue-300 text-xs font-medium mb-2">🤖 AI Analysis</p>
+                    <p className="text-blue-100 text-sm">{competitorAnalysis.summary}</p>
+                  </div>
+                )}
+                {competitorAnalysis.opportunities?.length > 0 && (
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <p className="text-blue-300 text-xs font-medium mb-2">✅ Opportunities</p>
+                    <ul className="flex flex-col gap-1">{competitorAnalysis.opportunities.map((opp: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {opp}</li>)}</ul>
+                  </div>
+                )}
+                {competitorAnalysis.threats?.length > 0 && (
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <p className="text-blue-300 text-xs font-medium mb-2">⚠️ Threats</p>
+                    <ul className="flex flex-col gap-1">{competitorAnalysis.threats.map((threat: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {threat}</li>)}</ul>
+                  </div>
+                )}
+                {competitorAnalysis.news?.length > 0 && (
+                  <div className="bg-white/10 rounded-xl p-4">
+                    <p className="text-blue-300 text-xs font-medium mb-2">📰 Competitor News</p>
+                    <div className="flex flex-col gap-2">
+                      {competitorAnalysis.news.map((item: any, i: number) => (
+                        <div key={i} className="bg-white/10 rounded-lg p-3">
+                          <p className="text-white text-xs font-medium">{item.competitor}: {item.headline}</p>
+                          <p className="text-blue-300 text-xs mt-1">💡 {item.implication}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-blue-300 text-sm">Click "Analyze" to see how your traffic compares to competitors and get strategic recommendations.</p>
+            )}
           </div>
         )}
-      </>
-    ) : (
-      <p className="text-blue-300 text-sm">Click "Analyze" to see how your traffic compares to competitors and get strategic recommendations.</p>
-    )}
-  </div>
-)}
+
+        {/* Ad Budget Optimization */}
+        {(googleAdsConnected || metaAdsConnected) && (
+          <div className="bg-white/10 rounded-2xl p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-white font-bold text-lg">🎯 Ad Budget Optimization</h2>
+                <p className="text-blue-300 text-sm mt-1">
+                  {[googleAdsConnected && 'Google Ads', metaAdsConnected && 'Meta Ads'].filter(Boolean).join(' + ')} connected
+                </p>
+              </div>
+              <button onClick={optimizeAds} disabled={loadingAds}
+                className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
+                {loadingAds ? 'Optimizing...' : adOptimization ? '🔄 Refresh' : 'Optimize'}
+              </button>
+            </div>
+            {adOptimization ? (
+              <>
+                <div className={`rounded-xl p-4 mb-4 ${adOptimization.recommendedLevel === 'busy' ? 'bg-green-500/20' : adOptimization.recommendedLevel === 'slow' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`}>
+                  <p className="text-white text-sm font-medium">
+                    {adOptimization.recommendedLevel === 'busy' && '🔥 High traffic week — maximize your ad spend'}
+                    {adOptimization.recommendedLevel === 'normal' && '📊 Normal traffic week — moderate ad spend recommended'}
+                    {adOptimization.recommendedLevel === 'slow' && '📉 Slow week predicted — reduce ad spend to save budget'}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {adOptimization.results?.map((result: any, i: number) => (
+                    <div key={i} className="bg-white/10 rounded-xl p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-white font-medium text-sm">{result.platform === 'Google Ads' ? '🔍' : '📘'} {result.platform}</p>
+                        <p className="text-white font-bold text-lg">${result.recommended_budget.toFixed(2)}/day</p>
+                      </div>
+                      <p className="text-blue-300 text-xs">{result.reason}</p>
+                      {result.dayBreakdown && result.dayBreakdown.length > 0 && (
+                        <div className="mt-3 flex flex-col gap-1">
+                          <p className="text-blue-300 text-xs font-medium">Day-by-day budget:</p>
+                          {result.dayBreakdown.map((day: any, j: number) => (
+                            <div key={j} className="flex justify-between items-center text-xs py-1 border-b border-white/10">
+                              <span className="text-blue-300">{day.date}</span>
+                              <span className="text-white font-medium">${parseFloat(day.budget).toFixed(2)}/day</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 bg-white/10 rounded-xl p-3">
+                  <p className="text-blue-300 text-xs">💡 Go to Settings to adjust your min/max budget limits.</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-blue-300 text-sm">Click "Optimize" to get AI-powered ad budget recommendations based on this week's traffic predictions.</p>
+            )}
+          </div>
+        )}
 
         {/* Prediction Accuracy */}
         {accuracy && (
@@ -632,15 +634,12 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
             <h2 className="text-white font-bold text-lg mb-4">🎯 Prediction Accuracy</h2>
             <div className="flex items-center gap-6 mb-4">
               <div className="text-center">
-                <p className={`text-5xl font-bold ${accuracy.accuracy >= 70 ? 'text-green-400' : accuracy.accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {accuracy.accuracy}%
-                </p>
+                <p className={`text-5xl font-bold ${accuracy.accuracy >= 70 ? 'text-green-400' : accuracy.accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>{accuracy.accuracy}%</p>
                 <p className="text-blue-200 text-sm mt-1">Accuracy Score</p>
               </div>
               <div className="flex-1">
                 <div className="bg-white/10 rounded-full h-4 overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${accuracy.accuracy >= 70 ? 'bg-green-400' : accuracy.accuracy >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                    style={{ width: `${accuracy.accuracy}%` }} />
+                  <div className={`h-full rounded-full transition-all ${accuracy.accuracy >= 70 ? 'bg-green-400' : accuracy.accuracy >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${accuracy.accuracy}%` }} />
                 </div>
                 <p className="text-blue-300 text-xs mt-2">{accuracy.correct} correct out of {accuracy.total} predictions</p>
               </div>
@@ -665,61 +664,6 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
             )}
           </div>
         )}
-        {/* Ad Budget Optimization */}
-{(googleAdsConnected || metaAdsConnected) && (
-  <div className="bg-white/10 rounded-2xl p-6 mb-6">
-    <div className="flex justify-between items-center mb-4">
-      <div>
-        <h2 className="text-white font-bold text-lg">🎯 Ad Budget Optimization</h2>
-        <p className="text-blue-300 text-sm mt-1">
-          {[googleAdsConnected && 'Google Ads', metaAdsConnected && 'Meta Ads'].filter(Boolean).join(' + ')} connected
-        </p>
-      </div>
-      <button onClick={optimizeAds} disabled={loadingAds}
-        className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
-        {loadingAds ? 'Optimizing...' : adOptimization ? '🔄 Refresh' : 'Optimize'}
-      </button>
-    </div>
-    {adOptimization ? (
-      <>
-        <div className={`rounded-xl p-4 mb-4 ${adOptimization.recommendedLevel === 'busy' ? 'bg-green-500/20' : adOptimization.recommendedLevel === 'slow' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`}>
-          <p className="text-white text-sm font-medium">
-            {adOptimization.recommendedLevel === 'busy' && '🔥 High traffic week — maximize your ad spend'}
-            {adOptimization.recommendedLevel === 'normal' && '📊 Normal traffic week — moderate ad spend recommended'}
-            {adOptimization.recommendedLevel === 'slow' && '📉 Slow week predicted — reduce ad spend to save budget'}
-          </p>
-        </div>
-        <div className="flex flex-col gap-3">
-          {adOptimization.results?.map((result: any, i: number) => (
-            <div key={i} className="bg-white/10 rounded-xl p-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-white font-medium text-sm">{result.platform === 'Google Ads' ? '🔍' : '📘'} {result.platform}</p>
-                <p className="text-white font-bold text-lg">${result.recommended_budget.toFixed(2)}/day</p>
-              </div>
-              <p className="text-blue-300 text-xs">{result.reason}</p>
-              {result.dayBreakdown && result.dayBreakdown.length > 0 && (
-                <div className="mt-3 flex flex-col gap-1">
-                  <p className="text-blue-300 text-xs font-medium">Day-by-day budget:</p>
-                  {result.dayBreakdown.map((day: any, j: number) => (
-                    <div key={j} className="flex justify-between items-center text-xs py-1 border-b border-white/10">
-                      <span className="text-blue-300">{day.date}</span>
-                      <span className="text-white font-medium">${parseFloat(day.budget).toFixed(2)}/day</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 bg-white/10 rounded-xl p-3">
-          <p className="text-blue-300 text-xs">💡 Go to Settings to adjust your min/max budget limits.</p>
-        </div>
-      </>
-    ) : (
-      <p className="text-blue-300 text-sm">Click "Optimize" to get AI-powered ad budget recommendations based on this week's traffic predictions.</p>
-    )}
-  </div>
-)}
 
         {/* Performance Report */}
         {performance && (
@@ -763,11 +707,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
                 const supabase = createClient()
                 const { data: { session } } = await supabase.auth.getSession()
                 if (!session) return
-                const res = await fetch('/api/import-walkins', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ csvText, userId: session.user.id, storeId: store.id })
-                })
+                const res = await fetch('/api/import-walkins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csvText, userId: session.user.id, storeId: store.id }) })
                 const data = await res.json()
                 setImportResult(data.success ? `✅ Imported ${data.imported} days of walk-in data!` : `❌ Error: ${data.error}`)
                 setImporting(false)
@@ -804,11 +744,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
                 const supabase = createClient()
                 const { data: { session } } = await supabase.auth.getSession()
                 if (!session) return
-                const res = await fetch('/api/import-sales', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ csvText, userId: session.user.id, storeId: store.id })
-                })
+                const res = await fetch('/api/import-sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csvText, userId: session.user.id, storeId: store.id }) })
                 const data = await res.json()
                 setSalesImportResult(data.success ? `✅ Imported ${data.imported} days of sales data!` : `❌ Error: ${data.error}`)
                 setSalesImporting(false)
@@ -953,11 +889,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
                   setChatInput('')
                   setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
                   setChatLoading(true)
-                  const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userMessage, store, weather, events, recentLogs, salesHistory, demographics, chatHistory: chatMessages })
-                  })
+                  const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMessage, store, weather, events, recentLogs, salesHistory, demographics, chatHistory: chatMessages }) })
                   const data = await res.json()
                   setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
                   setChatLoading(false)
@@ -971,11 +903,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
               setChatInput('')
               setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
               setChatLoading(true)
-              const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userMessage, store, weather, events, recentLogs, salesHistory, demographics, chatHistory: chatMessages })
-              })
+              const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMessage, store, weather, events, recentLogs, salesHistory, demographics, chatHistory: chatMessages }) })
               const data = await res.json()
               setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
               setChatLoading(false)
