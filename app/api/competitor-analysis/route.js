@@ -109,6 +109,18 @@ Respond with ONLY a JSON object:
     }
 
     const analysis = JSON.parse(jsonMatch[0])
+    
+    // Strip citation tags
+    const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
+    if (analysis.summary) analysis.summary = stripCites(analysis.summary)
+    if (analysis.opportunities) analysis.opportunities = analysis.opportunities.map(stripCites)
+    if (analysis.threats) analysis.threats = analysis.threats.map(stripCites)
+    if (analysis.news) analysis.news = analysis.news.map(n => ({
+      ...n,
+      headline: stripCites(n.headline),
+      implication: stripCites(n.implication)
+    }))
+
     return Response.json({ competitorTraffic, myTraffic, ...analysis })
 
   } catch (err) {
