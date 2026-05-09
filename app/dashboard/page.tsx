@@ -99,12 +99,12 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
           .from('competitors').select('*').eq('user_id', session.user.id)
         if (comps) setCompetitors(comps)
           const { data: googleToken } = await supabase
-          .from('google_ads_tokens').select('id').eq('user_id', session.user.id).single()
-        if (googleToken) setGoogleAdsConnected(true)
+          .from('google_ads_tokens').select('id').eq('user_id', session.user.id)
+        if (googleToken && googleToken.length > 0) setGoogleAdsConnected(true)
 
         const { data: metaToken } = await supabase
-          .from('meta_ads_tokens').select('id').eq('user_id', session.user.id).single()
-        if (metaToken) setMetaAdsConnected(true)
+          .from('meta_ads_tokens').select('id').eq('user_id', session.user.id)
+        if (metaToken && metaToken.length > 0) setMetaAdsConnected(true)
 
         const [weatherRes, eventsRes, trafficRes] = await Promise.all([
           fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
