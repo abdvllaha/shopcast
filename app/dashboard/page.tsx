@@ -61,6 +61,54 @@ export default function Dashboard() {
   const [metaAdsConnected, setMetaAdsConnected] = useState(false)
   const router = useRouter()
 
+  const loadStoreData = async (currentStore: any, uid: string) => {
+    const supabase = createClient()
+    const today = new Date().toISOString().split('T')[0]
+
+    const { data: todayData } = await supabase
+      .from('traffic_logs').select('*').eq('store_id', currentStore.id).eq('log_date', today).single()
+    setTodayLog(todayData?.traffic_level || null)
+
+    const { data: logs } = await supabase
+      .from('traffic_logs').select('*').eq('store_id', currentStore.id)
+      .order('log_date', { ascending: false }).limit(7)
+    setRecentLogs(logs || [])
+
+    const { data: sales } = await supabase
+      .from('sales_history').select('*').eq('store_id', currentStore.id)
+      .order('sale_date', { ascending: false }).limit(365)
+    setSalesHistory(sales || [])
+
+    const { data: comps } = await supabase
+      .from('competitors').select('*').eq('store_id', currentStore.id)
+    setCompetitors(comps || [])
+
+    const perfRes = await fetch(`/api/performance?userId=${uid}&storeId=${currentStore.id}`)
+    const perfData = await perfRes.json()
+    if (perfData.total) setPerformance(perfData)
+    else setPerformance(null)
+
+    const accRes = await fetch(`/api/accuracy?userId=${uid}&storeId=${currentStore.id}`)
+    const accData = await accRes.json()
+    if (accData.accuracy !== undefined) setAccuracy(accData)
+    else setAccuracy(null)
+
+    const [weatherRes, eventsRes, trafficRes] = await Promise.all([
+      fetch(`/api/weather?city=${encodeURIComponent(currentStore.city)}`),
+      fetch(`/api/events?city=${encodeURIComponent(currentStore.city)}`),
+      fetch(`/api/road-traffic?address=${encodeURIComponent(currentStore.address)}&city=${encodeURIComponent(currentStore.city)}`)
+    ])
+
+    const weatherData = await weatherRes.json()
+    const eventsData = await eventsRes.json()
+    const trafficData = await trafficRes.json()
+
+    setWeather(weatherData)
+    setEvents(eventsData.events || [])
+    if (trafficData.trafficLevel) setRoadTraffic(trafficData)
+    else setRoadTraffic(null)
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -72,61 +120,20 @@ export default function Dashboard() {
 
         const { data: storesData } = await supabase
           .from('stores').select('*').eq('user_id', session.user.id)
-        
         if (!storesData || storesData.length === 0) { router.push('/setup'); return }
         setAllStores(storesData)
         const currentStore = storesData[0]
         setStore(currentStore)
 
-        const today = new Date().toISOString().split('T')[0]
-        const { data: todayData } = await supabase
-          .from('traffic_logs').select('*').eq('store_id', currentStore.id).eq('log_date', today).single()
-        if (todayData) setTodayLog(todayData.traffic_level)
-
-        const { data: logs } = await supabase
-          .from('traffic_logs').select('*').eq('store_id', currentStore.id)
-          .order('log_date', { ascending: false }).limit(7)
-        if (logs) setRecentLogs(logs)
-
-        const { data: sales } = await supabase
-          .from('sales_history').select('*').eq('store_id', currentStore.id)
-          .order('sale_date', { ascending: false }).limit(365)
-        if (sales) setSalesHistory(sales)
-
-        const perfRes = await fetch(`/api/performance?userId=${session.user.id}`)
-        const perfData = await perfRes.json()
-        if (perfData.total) setPerformance(perfData)
-
-        const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${currentStore.id}`)
-        const accData = await accRes.json()
-        if (accData.accuracy !== undefined) setAccuracy(accData)
-
-        const { data: comps } = await supabase
-          .from('competitors').select('*').eq('user_id', session.user.id)
-        if (comps) setCompetitors(comps)
-
         const { data: googleToken } = await supabase
           .from('google_ads_tokens').select('id').eq('user_id', session.user.id)
-        console.log('Google token check:', googleToken)
         if (googleToken && googleToken.length > 0) setGoogleAdsConnected(true)
 
         const { data: metaToken } = await supabase
           .from('meta_ads_tokens').select('id').eq('user_id', session.user.id)
         if (metaToken && metaToken.length > 0) setMetaAdsConnected(true)
 
-        const [weatherRes, eventsRes, trafficRes] = await Promise.all([
-          fetch(`/api/weather?city=${encodeURIComponent(currentStore.city)}`),
-          fetch(`/api/events?city=${encodeURIComponent(currentStore.city)}`),
-          fetch(`/api/road-traffic?address=${encodeURIComponent(currentStore.address)}&city=${encodeURIComponent(currentStore.city)}`)
-        ])
-
-        const weatherData = await weatherRes.json()
-        const eventsData = await eventsRes.json()
-        const trafficData = await trafficRes.json()
-
-        setWeather(weatherData)
-        setEvents(eventsData.events || [])
-        if (trafficData.trafficLevel) setRoadTraffic(trafficData)
+        await loadStoreData(currentStore, session.user.id)
         setLoading(false)
       } catch (err) {
         console.error('Dashboard load error:', err)
@@ -143,56 +150,13 @@ export default function Dashboard() {
     setPrediction('')
     setAdOptimization(null)
     setCompetitorAnalysis(null)
-    setWeather(null)
-    setEvents([])
-    setRoadTraffic(null)
-    setTodayLog(null)
-    setRecentLogs([])
-    setPerformance(null)
-    setAccuracy(null)
-    setSalesHistory([])
-
-    const supabase = createClient()
-    const today = new Date().toISOString().split('T')[0]
-    
-    const { data: todayData } = await supabase
-      .from('traffic_logs').select('*').eq('store_id', newStore.id).eq('log_date', today).single()
-    if (todayData) setTodayLog(todayData.traffic_level)
-
-    const { data: logs } = await supabase
-      .from('traffic_logs').select('*').eq('store_id', newStore.id)
-      .order('log_date', { ascending: false }).limit(7)
-    if (logs) setRecentLogs(logs)
-
-    const { data: sales } = await supabase
-      .from('sales_history').select('*').eq('store_id', newStore.id)
-      .order('sale_date', { ascending: false }).limit(365)
-    if (sales) setSalesHistory(sales)
-
-    const perfRes = await fetch(`/api/performance?userId=${userId}&storeId=${newStore.id}`)
-    const perfData = await perfRes.json()
-    if (perfData.total) setPerformance(perfData)
-
-    const accRes = await fetch(`/api/accuracy?userId=${userId}&storeId=${newStore.id}`)
-    const accData = await accRes.json()
-    if (accData.accuracy !== undefined) setAccuracy(accData)
-
-    const [weatherRes, eventsRes, trafficRes] = await Promise.all([
-      fetch(`/api/weather?city=${encodeURIComponent(newStore.city)}`),
-      fetch(`/api/events?city=${encodeURIComponent(newStore.city)}`),
-      fetch(`/api/road-traffic?address=${encodeURIComponent(newStore.address)}&city=${encodeURIComponent(newStore.city)}`)
-    ])
-
-    const weatherData = await weatherRes.json()
-    const eventsData = await eventsRes.json()
-    const trafficData = await trafficRes.json()
-
-    setWeather(weatherData)
-    setEvents(eventsData.events || [])
-    if (trafficData.trafficLevel) setRoadTraffic(trafficData)
+    setTrends(null)
+    setDemographics(null)
+    await loadStoreData(newStore, userId)
   }
 
   const loadTrends = async () => {
+    if (!store) return
     setLoadingTrends(true)
     try {
       const res = await fetch(`/api/trends?storeType=${encodeURIComponent(store.store_type)}&city=${encodeURIComponent(store.city)}`)
@@ -203,6 +167,7 @@ export default function Dashboard() {
   }
 
   const loadDemographics = async () => {
+    if (!store) return
     setLoadingDemographics(true)
     try {
       const res = await fetch(`/api/demographics?address=${encodeURIComponent(store.address)}&city=${encodeURIComponent(store.city)}`)
@@ -275,7 +240,7 @@ export default function Dashboard() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: session.user.id, storeId: store.id, predictions: data.predictions })
             })
-const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${store?.id}`)
+            const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${store?.id}`)
             const accData = await accRes.json()
             if (accData.accuracy !== undefined) setAccuracy(accData)
           }
@@ -564,37 +529,10 @@ const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${st
                     </div>
                   ))}
                 </div>
-                {competitorAnalysis.summary && (
-                  <div className="bg-white/10 rounded-xl p-4 mb-4">
-                    <p className="text-blue-300 text-xs font-medium mb-2">🤖 AI Analysis</p>
-                    <p className="text-blue-100 text-sm">{competitorAnalysis.summary}</p>
-                  </div>
-                )}
-                {competitorAnalysis.opportunities?.length > 0 && (
-                  <div className="bg-white/10 rounded-xl p-4 mb-4">
-                    <p className="text-blue-300 text-xs font-medium mb-2">✅ Opportunities</p>
-                    <ul className="flex flex-col gap-1">{competitorAnalysis.opportunities.map((opp: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {opp}</li>)}</ul>
-                  </div>
-                )}
-                {competitorAnalysis.threats?.length > 0 && (
-                  <div className="bg-white/10 rounded-xl p-4 mb-4">
-                    <p className="text-blue-300 text-xs font-medium mb-2">⚠️ Threats</p>
-                    <ul className="flex flex-col gap-1">{competitorAnalysis.threats.map((threat: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {threat}</li>)}</ul>
-                  </div>
-                )}
-                {competitorAnalysis.news?.length > 0 && (
-                  <div className="bg-white/10 rounded-xl p-4">
-                    <p className="text-blue-300 text-xs font-medium mb-2">📰 Competitor News</p>
-                    <div className="flex flex-col gap-2">
-                      {competitorAnalysis.news.map((item: any, i: number) => (
-                        <div key={i} className="bg-white/10 rounded-lg p-3">
-                          <p className="text-white text-xs font-medium">{item.competitor}: {item.headline}</p>
-                          <p className="text-blue-300 text-xs mt-1">💡 {item.implication}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {competitorAnalysis.summary && <div className="bg-white/10 rounded-xl p-4 mb-4"><p className="text-blue-300 text-xs font-medium mb-2">🤖 AI Analysis</p><p className="text-blue-100 text-sm">{competitorAnalysis.summary}</p></div>}
+                {competitorAnalysis.opportunities?.length > 0 && <div className="bg-white/10 rounded-xl p-4 mb-4"><p className="text-blue-300 text-xs font-medium mb-2">✅ Opportunities</p><ul className="flex flex-col gap-1">{competitorAnalysis.opportunities.map((opp: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {opp}</li>)}</ul></div>}
+                {competitorAnalysis.threats?.length > 0 && <div className="bg-white/10 rounded-xl p-4 mb-4"><p className="text-blue-300 text-xs font-medium mb-2">⚠️ Threats</p><ul className="flex flex-col gap-1">{competitorAnalysis.threats.map((threat: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {threat}</li>)}</ul></div>}
+                {competitorAnalysis.news?.length > 0 && <div className="bg-white/10 rounded-xl p-4"><p className="text-blue-300 text-xs font-medium mb-2">📰 Competitor News</p><div className="flex flex-col gap-2">{competitorAnalysis.news.map((item: any, i: number) => <div key={i} className="bg-white/10 rounded-lg p-3"><p className="text-white text-xs font-medium">{item.competitor}: {item.headline}</p><p className="text-blue-300 text-xs mt-1">💡 {item.implication}</p></div>)}</div></div>}
               </>
             ) : (
               <p className="text-blue-300 text-sm">Click "Analyze" to see how your traffic compares to competitors and get strategic recommendations.</p>
@@ -608,9 +546,7 @@ const accRes = await fetch(`/api/accuracy?userId=${session.user.id}&storeId=${st
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-white font-bold text-lg">🎯 Ad Budget Optimization</h2>
-                <p className="text-blue-300 text-sm mt-1">
-                  {[googleAdsConnected && 'Google Ads', metaAdsConnected && 'Meta Ads'].filter(Boolean).join(' + ')} connected
-                </p>
+                <p className="text-blue-300 text-sm mt-1">{[googleAdsConnected && 'Google Ads', metaAdsConnected && 'Meta Ads'].filter(Boolean).join(' + ')} connected</p>
               </div>
               <button onClick={optimizeAds} disabled={loadingAds}
                 className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
