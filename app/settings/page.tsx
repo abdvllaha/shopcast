@@ -10,6 +10,7 @@ export default function Settings() {
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [storeType, setStoreType] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -48,11 +49,12 @@ export default function Settings() {
         setAddress(s.address)
         setCity(s.city)
         setStoreType(s.store_type)
-      }
+        setWebsiteUrl(s.website_url || '')
 
-      const { data: comps } = await supabase
-        .from('competitors').select('*').eq('store_id', storesData?.[0]?.id || '')
-      if (comps) setCompetitors(comps)
+        const { data: comps } = await supabase
+          .from('competitors').select('*').eq('store_id', storesData?.[0]?.id || '')
+        if (comps) setCompetitors(comps)
+      }
 
       const urlParams = new URLSearchParams(window.location.search)
       
@@ -109,6 +111,7 @@ export default function Settings() {
     setAddress(s.address)
     setCity(s.city)
     setStoreType(s.store_type)
+    setWebsiteUrl(s.website_url || '')
     setSaved(false)
     setError('')
     const supabase = createClient()
@@ -126,13 +129,13 @@ export default function Settings() {
     setError('')
     const supabase = createClient()
     const { error } = await supabase.from('stores').update({
-      store_name: storeName, address, city, store_type: storeType
+      store_name: storeName, address, city, store_type: storeType, website_url: websiteUrl
     }).eq('id', selectedStore.id)
     if (error) setError(error.message)
     else {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-      setAllStores(prev => prev.map(s => s.id === selectedStore.id ? { ...s, store_name: storeName, address, city, store_type: storeType } : s))
+      setAllStores(prev => prev.map(s => s.id === selectedStore.id ? { ...s, store_name: storeName, address, city, store_type: storeType, website_url: websiteUrl } : s))
     }
     setSaving(false)
   }
@@ -143,11 +146,8 @@ export default function Settings() {
     await supabase.from('stores').delete().eq('id', storeId)
     const remaining = allStores.filter(s => s.id !== storeId)
     setAllStores(remaining)
-    if (remaining.length > 0) {
-      selectStore(remaining[0])
-    } else {
-      router.push('/setup')
-    }
+    if (remaining.length > 0) selectStore(remaining[0])
+    else router.push('/setup')
   }
 
   const addCompetitor = async () => {
@@ -184,7 +184,7 @@ export default function Settings() {
   )
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-6">
+    <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button onClick={() => router.push('/dashboard')} className="text-blue-200 hover:text-white transition">
@@ -206,9 +206,7 @@ export default function Settings() {
                   </div>
                   {allStores.length > 1 && (
                     <button onClick={e => { e.stopPropagation(); deleteStore(s.id) }}
-                      className="text-red-400 hover:text-red-600 text-sm transition ml-4">
-                      Delete
-                    </button>
+                      className="text-red-400 hover:text-red-600 text-sm transition ml-4">Delete</button>
                   )}
                 </div>
               ))}
@@ -219,9 +217,7 @@ export default function Settings() {
         {/* Store Settings */}
         <div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
           <h1 className="text-2xl font-bold text-blue-900 mb-2">Store Settings</h1>
-          <p className="text-gray-500 mb-6">
-            {allStores.length > 1 ? `Editing: ${selectedStore?.store_name}` : 'Update your store details'}
-          </p>
+          <p className="text-gray-500 mb-6">{allStores.length > 1 ? `Editing: ${selectedStore?.store_name}` : 'Update your store details'}</p>
           {error && <div className="bg-red-50 text-red-600 rounded-lg p-3 mb-4 text-sm">{error}</div>}
           {saved && <div className="bg-green-50 text-green-600 rounded-lg p-3 mb-4 text-sm">✅ Settings saved successfully</div>}
           <div className="flex flex-col gap-4">
@@ -238,6 +234,12 @@ export default function Settings() {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">City</label>
               <input type="text" value={city} onChange={e => setCity(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Website URL</label>
+              <input type="text" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)}
+                placeholder="e.g. https://yourstore.com"
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
@@ -263,8 +265,7 @@ export default function Settings() {
         <div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
           <h2 className="text-xl font-bold text-blue-900 mb-2">➕ Add Another Store</h2>
           <p className="text-gray-500 mb-6">Manage multiple locations from one account</p>
-          <a href="/setup"
-            className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
+          <a href="/setup" className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
             + Add New Store Location
           </a>
         </div>
@@ -305,9 +306,7 @@ export default function Settings() {
               </button>
             </div>
           )}
-          {competitors.length === 5 && (
-            <p className="text-gray-500 text-sm text-center">Maximum 5 competitors reached</p>
-          )}
+          {competitors.length === 5 && <p className="text-gray-500 text-sm text-center">Maximum 5 competitors reached</p>}
         </div>
 
         {/* Google Ads */}
@@ -327,24 +326,20 @@ export default function Settings() {
                 <p className="text-sm font-medium text-gray-700">Set your daily budget limits:</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block">Minimum daily budget ($)</label>
+                    <label className="text-sm text-gray-600 mb-1 block">Minimum ($)</label>
                     <input type="number" value={minBudget} onChange={e => setMinBudget(e.target.value)}
                       className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block">Maximum daily budget ($)</label>
+                    <label className="text-sm text-gray-600 mb-1 block">Maximum ($)</label>
                     <input type="number" value={maxBudget} onChange={e => setMaxBudget(e.target.value)}
                       className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                 </div>
-                <p className="text-xs text-gray-400">ShopCast will never spend outside these limits.</p>
                 <button onClick={async () => {
                   setSavingAdsSettings(true)
                   const supabase = createClient()
-                  await supabase.from('google_ads_tokens').update({
-                    min_budget: parseFloat(minBudget),
-                    max_budget: parseFloat(maxBudget)
-                  }).eq('user_id', userId)
+                  await supabase.from('google_ads_tokens').update({ min_budget: parseFloat(minBudget), max_budget: parseFloat(maxBudget) }).eq('user_id', userId)
                   setSavingAdsSettings(false)
                   alert('Budget settings saved!')
                 }} className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
@@ -355,9 +350,7 @@ export default function Settings() {
                 const supabase = createClient()
                 await supabase.from('google_ads_tokens').delete().eq('user_id', userId)
                 setGoogleAdsConnected(false)
-              }} className="text-red-400 hover:text-red-600 text-sm transition">
-                Disconnect Google Ads
-              </button>
+              }} className="text-red-400 hover:text-red-600 text-sm transition">Disconnect Google Ads</button>
             </div>
           ) : (
             <div>
@@ -369,8 +362,7 @@ export default function Settings() {
                   <li>• You set the limits — ShopCast never exceeds them</li>
                 </ul>
               </div>
-              <a href="/api/google-ads/connect"
-                className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
+              <a href="/api/google-ads/connect" className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
                 🔗 Connect Google Ads Account
               </a>
             </div>
@@ -394,24 +386,20 @@ export default function Settings() {
                 <p className="text-sm font-medium text-gray-700">Set your daily budget limits:</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block">Minimum daily budget ($)</label>
+                    <label className="text-sm text-gray-600 mb-1 block">Minimum ($)</label>
                     <input type="number" value={metaMinBudget} onChange={e => setMetaMinBudget(e.target.value)}
                       className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block">Maximum daily budget ($)</label>
+                    <label className="text-sm text-gray-600 mb-1 block">Maximum ($)</label>
                     <input type="number" value={metaMaxBudget} onChange={e => setMetaMaxBudget(e.target.value)}
                       className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                 </div>
-                <p className="text-xs text-gray-400">ShopCast will never spend outside these limits.</p>
                 <button onClick={async () => {
                   setSavingMetaSettings(true)
                   const supabase = createClient()
-                  await supabase.from('meta_ads_tokens').update({
-                    min_budget: parseFloat(metaMinBudget),
-                    max_budget: parseFloat(metaMaxBudget)
-                  }).eq('user_id', userId)
+                  await supabase.from('meta_ads_tokens').update({ min_budget: parseFloat(metaMinBudget), max_budget: parseFloat(metaMaxBudget) }).eq('user_id', userId)
                   setSavingMetaSettings(false)
                   alert('Budget settings saved!')
                 }} className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
@@ -422,9 +410,7 @@ export default function Settings() {
                 const supabase = createClient()
                 await supabase.from('meta_ads_tokens').delete().eq('user_id', userId)
                 setMetaAdsConnected(false)
-              }} className="text-red-400 hover:text-red-600 text-sm transition">
-                Disconnect Facebook Ads
-              </button>
+              }} className="text-red-400 hover:text-red-600 text-sm transition">Disconnect Facebook Ads</button>
             </div>
           ) : (
             <div>
@@ -436,8 +422,7 @@ export default function Settings() {
                   <li>• You set the limits — ShopCast never exceeds them</li>
                 </ul>
               </div>
-              <a href="/api/meta-ads/connect"
-                className="block w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-500 transition text-center">
+              <a href="/api/meta-ads/connect" className="block w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-500 transition text-center">
                 🔗 Connect Facebook & Instagram Ads
               </a>
             </div>
