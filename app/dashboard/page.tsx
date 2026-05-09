@@ -101,6 +101,7 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
           const { data: googleToken } = await supabase
           .from('google_ads_tokens').select('id').eq('user_id', session.user.id)
         if (googleToken && googleToken.length > 0) setGoogleAdsConnected(true)
+          console.log('Google token check:', googleToken)
 
         const { data: metaToken } = await supabase
           .from('meta_ads_tokens').select('id').eq('user_id', session.user.id)
