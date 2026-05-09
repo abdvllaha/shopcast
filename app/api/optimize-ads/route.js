@@ -1,5 +1,5 @@
 export async function POST(request) {
-  const { userId, predictions } = await request.json()
+  const { userId, weeklyPredictions } = await request.json()
 
   try {
     const { createClient } = await import('@supabase/supabase-js')
@@ -10,65 +10,87 @@ export async function POST(request) {
 
     const results = []
 
-    // Get Google Ads token
     const { data: googleToken } = await supabase
-      .from('google_ads_tokens').select('*').eq('user_id', userId).single()
-
-    // Get Meta Ads token
+      .from('google_ads_tokens').select('*').eq('user_id', userId)
+    
     const { data: metaToken } = await supabase
-      .from('meta_ads_tokens').select('*').eq('user_id', userId).single()
+      .from('meta_ads_tokens').select('*').eq('user_id', userId)
 
-    // Calculate recommended budget based on predictions
-    const getRecommendedBudget = (level, minBudget, maxBudget) => {
+    const google = googleToken?.[0]
+    const meta = metaToken?.[0]
+
+    // Calculate budget based on weekly predictions
+    const getBudgetRecommendation = (predictions, minBudget, maxBudget) => {
       const min = parseFloat(minBudget) || 10
       const max = parseFloat(maxBudget) || 100
       const range = max - min
-      if (level === 'busy') return max
-      if (level === 'normal') return min + (range * 0.6)
-      return min
+
+      if (!predictions || predictions.length === 0) {
+        return { budget: min + (range * 0.6), level: 'normal' }
+      }
+
+      const busyDays = predictions.filter(p => p.level === 'busy').length
+      const slowDays = predictions.filter(p => p.level === 'slow').length
+      const total = predictions.length
+
+      const busyRatio = busyDays / total
+      const slowRatio = slowDays / total
+
+      let level, budget
+      if (busyRatio >= 0.5) {
+        level = 'busy'
+        budget = max
+      } else if (slowRatio >= 0.5) {
+        level = 'slow'
+        budget = min
+      } else {
+        level = 'normal'
+        budget = min + (range * 0.6)
+      }
+
+      return { budget, level }
     }
 
-    // Find highest traffic day this week
-    const highestTrafficDay = predictions?.reduce((best, curr) => {
-      const order = { busy: 3, normal: 2, slow: 1 }
-      return (order[curr.level] > order[best.level]) ? curr : best
-    }, predictions?.[0])
-
-    const recommendedLevel = highestTrafficDay?.level || 'normal'
-
-    // Optimize Google Ads
-    if (googleToken) {
-      const recommendedBudget = getRecommendedBudget(
-        recommendedLevel,
-        googleToken.min_budget,
-        googleToken.max_budget
-      )
+    const weeklyData = weeklyPredictions || []
+    
+    if (google) {
+      const { budget, level } = getBudgetRecommendation(weeklyData, google.min_budget, google.max_budget)
+      const dayBreakdown = weeklyData.map(p => ({
+        date: p.date,
+        budget: p.level === 'busy' ? google.max_budget : 
+                p.level === 'slow' ? google.min_budget : 
+                google.min_budget + ((google.max_budget - google.min_budget) * 0.6)
+      }))
 
       results.push({
         platform: 'Google Ads',
-        recommended_budget: recommendedBudget,
-        reason: `${recommendedLevel} traffic predicted — budget set to $${recommendedBudget.toFixed(2)}/day`,
-        status: 'calculated'
+        recommended_budget: budget,
+        level,
+        reason: `${level} traffic week predicted — budget set to $${budget.toFixed(2)}/day`,
+        dayBreakdown
       })
     }
 
-    // Optimize Meta Ads
-    if (metaToken) {
-      const recommendedBudget = getRecommendedBudget(
-        recommendedLevel,
-        metaToken.min_budget,
-        metaToken.max_budget
-      )
+    if (meta) {
+      const { budget, level } = getBudgetRecommendation(weeklyData, meta.min_budget, meta.max_budget)
+      const dayBreakdown = weeklyData.map(p => ({
+        date: p.date,
+        budget: p.level === 'busy' ? meta.max_budget :
+                p.level === 'slow' ? meta.min_budget :
+                meta.min_budget + ((meta.max_budget - meta.min_budget) * 0.6)
+      }))
 
       results.push({
         platform: 'Meta Ads',
-        recommended_budget: recommendedBudget,
-        reason: `${recommendedLevel} traffic predicted — budget set to $${recommendedBudget.toFixed(2)}/day`,
-        status: 'calculated'
+        recommended_budget: budget,
+        level,
+        reason: `${level} traffic week predicted — budget set to $${budget.toFixed(2)}/day`,
+        dayBreakdown
       })
     }
 
-    return Response.json({ success: true, results, recommendedLevel })
+    const overallLevel = results[0]?.level || 'normal'
+    return Response.json({ success: true, results, recommendedLevel: overallLevel })
 
   } catch (err) {
     console.error('Optimize ads error:', err.message)
