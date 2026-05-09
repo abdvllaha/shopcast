@@ -12,6 +12,13 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [storeId, setStoreId] = useState('')
+  const [userId, setUserId] = useState('')
+  const [competitors, setCompetitors] = useState<any[]>([])
+  const [newCompetitorName, setNewCompetitorName] = useState('')
+  const [newCompetitorAddress, setNewCompetitorAddress] = useState('')
+  const [newCompetitorCity, setNewCompetitorCity] = useState('')
+  const [addingCompetitor, setAddingCompetitor] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -19,19 +26,23 @@ export default function Settings() {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/login'); return }
+      setUserId(session.user.id)
 
       const { data: stores } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single()
+        .from('stores').select('*').eq('user_id', session.user.id).single()
 
       if (stores) {
         setStoreName(stores.store_name)
         setAddress(stores.address)
         setCity(stores.city)
         setStoreType(stores.store_type)
+        setStoreId(stores.id)
       }
+
+      const { data: comps } = await supabase
+        .from('competitors').select('*').eq('user_id', session.user.id)
+      if (comps) setCompetitors(comps)
+
       setLoading(false)
     }
     load()
@@ -44,28 +55,42 @@ export default function Settings() {
     }
     setSaving(true)
     setError('')
-
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.push('/login'); return }
-
-    const { error } = await supabase
-      .from('stores')
-      .update({
-        store_name: storeName,
-        address,
-        city,
-        store_type: storeType
-      })
-      .eq('user_id', session.user.id)
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    }
+    const { error } = await supabase.from('stores').update({
+      store_name: storeName, address, city, store_type: storeType
+    }).eq('user_id', session.user.id)
+    if (error) setError(error.message)
+    else { setSaved(true); setTimeout(() => setSaved(false), 3000) }
     setSaving(false)
+  }
+
+  const addCompetitor = async () => {
+    if (!newCompetitorName || !newCompetitorAddress || !newCompetitorCity) return
+    if (competitors.length >= 5) { setError('Maximum 5 competitors allowed'); return }
+    setAddingCompetitor(true)
+    const supabase = createClient()
+    const { data, error } = await supabase.from('competitors').insert({
+      user_id: userId,
+      store_id: storeId,
+      competitor_name: newCompetitorName,
+      address: newCompetitorAddress,
+      city: newCompetitorCity
+    }).select().single()
+    if (!error && data) {
+      setCompetitors(prev => [...prev, data])
+      setNewCompetitorName('')
+      setNewCompetitorAddress('')
+      setNewCompetitorCity('')
+    }
+    setAddingCompetitor(false)
+  }
+
+  const removeCompetitor = async (id: string) => {
+    const supabase = createClient()
+    await supabase.from('competitors').delete().eq('id', id)
+    setCompetitors(prev => prev.filter(c => c.id !== id))
   }
 
   if (loading) return (
@@ -78,15 +103,13 @@ export default function Settings() {
     <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-6">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-blue-200 hover:text-white transition"
-          >
+          <button onClick={() => router.push('/dashboard')} className="text-blue-200 hover:text-white transition">
             ← Back to Dashboard
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-2xl">
+        {/* Store Settings */}
+        <div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
           <h1 className="text-2xl font-bold text-blue-900 mb-2">Store Settings</h1>
           <p className="text-gray-500 mb-6">Update your store details to improve your predictions</p>
 
@@ -96,50 +119,74 @@ export default function Settings() {
           <div className="flex flex-col gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Store Name</label>
-              <input
-                type="text"
-                value={storeName}
-                onChange={e => setStoreName(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <input type="text" value={storeName} onChange={e => setStoreName(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Street Address</label>
-              <input
-                type="text"
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <input type="text" value={address} onChange={e => setAddress(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">City</label>
-              <input
-                type="text"
-                value={city}
-                onChange={e => setCity(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <input type="text" value={city} onChange={e => setCity(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Describe your store</label>
-              <textarea
-                value={storeType}
-                onChange={e => setStoreType(e.target.value)}
-                rows={4}
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-1">💡 Tip: Include your typical customer, busiest days, average sale size, and how weather affects your store. e.g. "Women's clothing boutique, busy Fri-Sat, average sale $85, rain hurts foot traffic"</p>
+              <textarea value={storeType} onChange={e => setStoreType(e.target.value)} rows={4}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              <p className="text-xs text-gray-400 mt-1">💡 Tip: Include your typical customer, busiest days, average sale size, and how weather affects your store.</p>
             </div>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition disabled:opacity-50 mt-2"
-            >
+            <button onClick={handleSave} disabled={saving}
+              className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition disabled:opacity-50 mt-2">
               {saving ? 'Saving...' : saved ? '✅ Saved!' : 'Save Changes'}
             </button>
           </div>
+        </div>
+
+        {/* Competitors */}
+        <div className="bg-white rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-xl font-bold text-blue-900 mb-2">🏪 Competitors</h2>
+          <p className="text-gray-500 mb-6">Add up to 5 competitors to track and compare traffic</p>
+
+          {competitors.length > 0 && (
+            <div className="flex flex-col gap-3 mb-6">
+              {competitors.map(comp => (
+                <div key={comp.id} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
+                  <div>
+                    <p className="font-medium text-gray-900">{comp.competitor_name}</p>
+                    <p className="text-gray-500 text-sm">{comp.address}, {comp.city}</p>
+                  </div>
+                  <button onClick={() => removeCompetitor(comp.id)}
+                    className="text-red-400 hover:text-red-600 transition text-sm">Remove</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {competitors.length < 5 && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm font-medium text-gray-700">Add a competitor ({competitors.length}/5)</p>
+              <input type="text" value={newCompetitorName} onChange={e => setNewCompetitorName(e.target.value)}
+                placeholder="Competitor name (e.g. The Brick)"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="text" value={newCompetitorAddress} onChange={e => setNewCompetitorAddress(e.target.value)}
+                placeholder="Street address"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="text" value={newCompetitorCity} onChange={e => setNewCompetitorCity(e.target.value)}
+                placeholder="City"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button onClick={addCompetitor} disabled={addingCompetitor || !newCompetitorName || !newCompetitorAddress || !newCompetitorCity}
+                className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition disabled:opacity-50">
+                {addingCompetitor ? 'Adding...' : '+ Add Competitor'}
+              </button>
+            </div>
+          )}
+
+          {competitors.length === 5 && (
+            <p className="text-gray-500 text-sm text-center">Maximum 5 competitors reached</p>
+          )}
         </div>
       </div>
     </main>
