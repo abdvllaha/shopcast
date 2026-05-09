@@ -724,7 +724,7 @@ export default function Dashboard() {
         {/* Weather */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
           <h2 className="text-white font-bold text-lg mb-4">📅 7-Day Weather Forecast</h2>
-          <div className="grid grid-cols-7 gap-1 overflow-x-auto">
+          <div className="flex overflow-x-auto gap-2 pb-2">
             {weather?.daily?.time?.map((date: string, i: number) => {
               const day = new Date(date)
               const code = weather.daily.weathercode[i]
@@ -732,9 +732,9 @@ export default function Dashboard() {
               const min = Math.round(weather.daily.temperature_2m_min[i])
               const rain = weather.daily.precipitation_sum[i]
               return (
-                <div key={date} className="bg-white/10 rounded-xl p-3 text-center">
+                <div key={date} className="bg-white/10 rounded-xl p-3 text-center flex-shrink-0 w-16 sm:w-auto">
                   <p className="text-blue-200 text-xs font-medium">{DAYS[day.getDay()]}</p>
-                  <p className="text-2xl my-1">{WEATHER_CODES[code]?.split(' ')[0] || '🌡️'}</p>
+                  <p className="text-xl my-1">{WEATHER_CODES[code]?.split(' ')[0] || '🌡️'}</p>
                   <p className="text-white text-sm font-bold">{max}°</p>
                   <p className="text-blue-300 text-xs">{min}°</p>
                   {rain > 0 && <p className="text-blue-300 text-xs mt-1">💧{rain}mm</p>}
