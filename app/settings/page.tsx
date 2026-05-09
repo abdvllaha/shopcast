@@ -51,7 +51,7 @@ export default function Settings() {
       }
 
       const { data: comps } = await supabase
-        .from('competitors').select('*').eq('store_id', session.user.id)
+        .from('competitors').select('*').eq('store_id', storesData[0].id)
       if (comps) setCompetitors(comps)
 
       const urlParams = new URLSearchParams(window.location.search)
