@@ -74,7 +74,8 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
           .from('stores').select('*').eq('user_id', session.user.id).order('created_at', { ascending: true })
         if (storeError || !storesData || storesData.length === 0) { router.push('/setup'); return }
         setAllStores(storesData)
-        setStore(storesData[0])
+        const activeStore = storesData[0]
+        setStore(activeStore)
 
         const today = new Date().toISOString().split('T')[0]
         const { data: todayData } = await supabase
@@ -111,9 +112,9 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         if (metaToken && metaToken.length > 0) setMetaAdsConnected(true)
 
         const [weatherRes, eventsRes, trafficRes] = await Promise.all([
-          fetch(`/api/weather?city=${encodeURIComponent(stores.city)}`),
-          fetch(`/api/events?city=${encodeURIComponent(stores.city)}`),
-          fetch(`/api/road-traffic?address=${encodeURIComponent(stores.address)}&city=${encodeURIComponent(stores.city)}`)
+          fetch(`/api/weather?city=${encodeURIComponent(store.city)}`),
+          fetch(`/api/events?city=${encodeURIComponent(store.city)}`),
+          fetch(`/api/road-traffic?address=${encodeURIComponent(store.address)}&city=${encodeURIComponent(store.city)}`)
         ])
 
         const weatherData = await weatherRes.json()
