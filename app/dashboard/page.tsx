@@ -16,6 +16,8 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function Dashboard() {
   const [store, setStore] = useState<any>(null)
+  const [allStores, setAllStores] = useState<any[]>([])
+const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
   const [weather, setWeather] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,10 +70,11 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
         setUserEmail(session.user.email ?? '')
         setUserId(session.user.id)
 
-        const { data: stores, error: storeError } = await supabase
-          .from('stores').select('*').eq('user_id', session.user.id).single()
-        if (storeError || !stores) { router.push('/setup'); return }
-        setStore(stores)
+        const { data: storesData, error: storeError } = await supabase
+          .from('stores').select('*').eq('user_id', session.user.id).order('created_at', { ascending: true })
+        if (storeError || !storesData || storesData.length === 0) { router.push('/setup'); return }
+        setAllStores(storesData)
+        setStore(storesData[0])
 
         const today = new Date().toISOString().split('T')[0]
         const { data: todayData } = await supabase
@@ -274,9 +277,36 @@ const [metaAdsConnected, setMetaAdsConnected] = useState(false)
 
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <div>
+          <div className="relative">
             <h1 className="text-white text-2xl font-bold">ShopCast</h1>
-            <p className="text-blue-200">{store?.store_name} · {store?.city}</p>
+            <button 
+              onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
+              className="text-blue-200 hover:text-white transition flex items-center gap-1">
+              {store?.store_name} · {store?.city}
+              {allStores.length > 1 && <span className="text-xs">▼</span>}
+            </button>
+            {showStoreSwitcher && allStores.length > 1 && (
+              <div className="absolute top-12 left-0 bg-white rounded-xl shadow-2xl p-2 z-50 min-w-64">
+                {allStores.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => { setStore(s); setShowStoreSwitcher(false); setPrediction(''); setAdOptimization(null); setCompetitorAnalysis(null) }}
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm transition ${store?.id === s.id ? 'bg-blue-50 text-blue-900 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    <p className="font-medium">{s.store_name}</p>
+                    <p className="text-gray-500 text-xs">{s.address}, {s.city}</p>
+                  </button>
+                ))}
+                <div className="border-t border-gray-100 mt-2 pt-2">
+                  <button
+                    onClick={() => { setShowStoreSwitcher(false); router.push('/setup') }}
+                    className="w-full text-left px-4 py-3 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition font-medium"
+                  >
+                    + Add New Store
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => router.push('/settings')} className="text-blue-200 hover:text-white transition text-sm">⚙️ Settings</button>
