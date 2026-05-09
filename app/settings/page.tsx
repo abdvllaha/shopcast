@@ -23,6 +23,10 @@ export default function Settings() {
   const [savingAdsSettings, setSavingAdsSettings] = useState(false)
   const [minBudget, setMinBudget] = useState('10')
   const [maxBudget, setMaxBudget] = useState('100')
+  const [metaAdsConnected, setMetaAdsConnected] = useState(false)
+const [savingMetaSettings, setSavingMetaSettings] = useState(false)
+const [metaMinBudget, setMetaMinBudget] = useState('10')
+const [metaMaxBudget, setMetaMaxBudget] = useState('100')
   const router = useRouter()
 
   useEffect(() => {
@@ -67,6 +71,25 @@ export default function Settings() {
           if (adsToken.min_budget) setMinBudget(adsToken.min_budget.toString())
           if (adsToken.max_budget) setMaxBudget(adsToken.max_budget.toString())
         }
+      const { data: metaToken } = await supabase
+        .from('meta_ads_tokens').select('*').eq('user_id', session.user.id).single()
+      if (metaToken) {
+        setMetaAdsConnected(true)
+        if (metaToken.min_budget) setMetaMinBudget(metaToken.min_budget.toString())
+        if (metaToken.max_budget) setMetaMaxBudget(metaToken.max_budget.toString())
+      }
+
+      // Check if Meta Ads just connected
+      const metaConnected = urlParams.get('meta_ads_connected')
+      const metaAccessToken = urlParams.get('access_token')
+      if (metaConnected === 'true' && metaAccessToken) {
+        await supabase.from('meta_ads_tokens').upsert({
+          user_id: session.user.id,
+          access_token: metaAccessToken
+        }, { onConflict: 'user_id' })
+        setMetaAdsConnected(true)
+        window.history.replaceState({}, '', '/settings')
+      }
       }
 
       setLoading(false)
@@ -274,6 +297,71 @@ export default function Settings() {
             </div>
           )}
         </div>
+       {/* Meta Ads */}
+<div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
+  <h2 className="text-xl font-bold text-blue-900 mb-2">📘 Facebook & Instagram Ads</h2>
+  <p className="text-gray-500 mb-6">Connect your Meta Ads account so ShopCast can automatically adjust your Facebook and Instagram ad budget based on predicted traffic</p>
+  {metaAdsConnected ? (
+    <div>
+      <div className="bg-green-50 rounded-xl p-4 mb-6 flex items-center gap-3">
+        <span className="text-green-500 text-2xl">✅</span>
+        <div>
+          <p className="text-green-800 font-medium">Facebook & Instagram Ads Connected</p>
+          <p className="text-green-600 text-sm">ShopCast can now optimize your Meta ad budget automatically</p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 mb-6">
+        <p className="text-sm font-medium text-gray-700">Set your daily budget limits:</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-600 mb-1 block">Minimum daily budget ($)</label>
+            <input type="number" value={metaMinBudget} onChange={e => setMetaMinBudget(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="text-sm text-gray-600 mb-1 block">Maximum daily budget ($)</label>
+            <input type="number" value={metaMaxBudget} onChange={e => setMetaMaxBudget(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        </div>
+        <p className="text-xs text-gray-400">ShopCast will never spend outside these limits.</p>
+        <button onClick={async () => {
+          setSavingMetaSettings(true)
+          const supabase = createClient()
+          await supabase.from('meta_ads_tokens').update({
+            min_budget: parseFloat(metaMinBudget),
+            max_budget: parseFloat(metaMaxBudget)
+          }).eq('user_id', userId)
+          setSavingMetaSettings(false)
+        }} className="bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
+          {savingMetaSettings ? 'Saving...' : 'Save Budget Settings'}
+        </button>
+      </div>
+      <button onClick={async () => {
+        const supabase = createClient()
+        await supabase.from('meta_ads_tokens').delete().eq('user_id', userId)
+        setMetaAdsConnected(false)
+      }} className="text-red-400 hover:text-red-600 text-sm transition">
+        Disconnect Facebook Ads
+      </button>
+    </div>
+  ) : (
+    <div>
+      <div className="bg-blue-50 rounded-xl p-4 mb-6">
+        <p className="text-blue-800 text-sm font-medium mb-2">How it works:</p>
+        <ul className="text-blue-700 text-sm space-y-1">
+          <li>• High traffic predicted → Facebook/Instagram budget increases</li>
+          <li>• Slow day predicted → budget reduces to save money</li>
+          <li>• You set the limits — ShopCast never exceeds them</li>
+        </ul>
+      </div>
+      <a href="/api/meta-ads/connect"
+        className="block w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-500 transition text-center">
+        🔗 Connect Facebook & Instagram Ads
+      </a>
+    </div>
+  )}
+</div> 
 
       </div>
     </main>
