@@ -59,6 +59,8 @@ export default function Dashboard() {
   const [loadingAds, setLoadingAds] = useState(false)
   const [googleAdsConnected, setGoogleAdsConnected] = useState(false)
   const [metaAdsConnected, setMetaAdsConnected] = useState(false)
+  const [websiteScan, setWebsiteScan] = useState<any>(null)
+  const [scanningWebsite, setScanningWebsite] = useState(false)
   const router = useRouter()
 
   const loadStoreData = async (currentStore: any, uid: string) => {
@@ -152,6 +154,7 @@ export default function Dashboard() {
     setCompetitorAnalysis(null)
     setTrends(null)
     setDemographics(null)
+    setWebsiteScan(null)
     await loadStoreData(newStore, userId)
   }
 
@@ -199,6 +202,21 @@ export default function Dashboard() {
       if (data.success) setAdOptimization(data)
     } catch (err) { console.error('Ad optimization error:', err) }
     setLoadingAds(false)
+  }
+
+  const scanWebsite = async () => {
+    if (!store?.website_url) return
+    setScanningWebsite(true)
+    try {
+      const res = await fetch('/api/website-scanner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteUrl: store.website_url, store })
+      })
+      const data = await res.json()
+      if (!data.error) setWebsiteScan(data)
+    } catch (err) { console.error('Website scan error:', err) }
+    setScanningWebsite(false)
   }
 
   const logTraffic = async (level: string) => {
@@ -323,8 +341,8 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.push('/settings')} className="text-blue-200 hover:text-white transition text-sm">⚙️ Settings</button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/settings')} className="text-blue-200 hover:text-white transition text-sm">⚙️</button>
             <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); router.push('/') }} className="text-blue-200 hover:text-white transition text-sm">Sign out</button>
           </div>
         </div>
@@ -497,6 +515,80 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Website Scanner */}
+        {store?.website_url ? (
+          <div className="bg-white/10 rounded-2xl p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-white font-bold text-lg">🌐 Website & Social Scanner</h2>
+                <p className="text-blue-300 text-sm mt-1">{store.website_url}</p>
+              </div>
+              <button onClick={scanWebsite} disabled={scanningWebsite}
+                className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
+                {scanningWebsite ? 'Scanning...' : websiteScan ? '🔄 Refresh' : 'Scan'}
+              </button>
+            </div>
+            {websiteScan ? (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="bg-white/10 rounded-xl p-3 text-center">
+                    <p className="text-blue-300 text-xs mb-1">Online Presence</p>
+                    <p className={`font-bold text-sm ${websiteScan.onlinePresence === 'strong' ? 'text-green-400' : websiteScan.onlinePresence === 'moderate' ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {websiteScan.onlinePresence?.charAt(0).toUpperCase() + websiteScan.onlinePresence?.slice(1)}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-3 text-center">
+                    <p className="text-blue-300 text-xs mb-1">Sentiment</p>
+                    <p className={`font-bold text-sm ${websiteScan.socialSentiment === 'positive' ? 'text-green-400' : websiteScan.socialSentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'}`}>
+                      {websiteScan.socialSentiment?.charAt(0).toUpperCase() + websiteScan.socialSentiment?.slice(1)}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-3 text-center">
+                    <p className="text-blue-300 text-xs mb-1">Web Traffic</p>
+                    <p className={`font-bold text-sm ${websiteScan.trafficEstimate === 'high' ? 'text-green-400' : websiteScan.trafficEstimate === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {websiteScan.trafficEstimate?.charAt(0).toUpperCase() + websiteScan.trafficEstimate?.slice(1)}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-3 text-center">
+                    <p className="text-blue-300 text-xs mb-1">Price Range</p>
+                    <p className="text-white font-bold text-sm">{websiteScan.priceRange?.charAt(0).toUpperCase() + websiteScan.priceRange?.slice(1)}</p>
+                  </div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 mb-4">
+                  <p className="text-blue-300 text-xs font-medium mb-2">📊 Summary</p>
+                  <p className="text-blue-100 text-sm">{websiteScan.summary}</p>
+                </div>
+                {websiteScan.promotions?.length > 0 && (
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <p className="text-blue-300 text-xs font-medium mb-2">🏷️ Current Promotions Found</p>
+                    <ul className="flex flex-col gap-1">{websiteScan.promotions.map((promo: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {promo}</li>)}</ul>
+                  </div>
+                )}
+                {websiteScan.opportunities?.length > 0 && (
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <p className="text-blue-300 text-xs font-medium mb-2">✅ Online Opportunities</p>
+                    <ul className="flex flex-col gap-1">{websiteScan.opportunities.map((opp: string, i: number) => <li key={i} className="text-blue-100 text-sm">• {opp}</li>)}</ul>
+                  </div>
+                )}
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-blue-300 text-xs font-medium mb-2">💬 Customer Sentiment</p>
+                  <p className="text-blue-100 text-sm">{websiteScan.sentimentSummary}</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-blue-300 text-sm">Click "Scan" to analyze your website and social media presence.</p>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white/10 rounded-2xl p-6 mb-6">
+            <h2 className="text-white font-bold text-lg mb-2">🌐 Website & Social Scanner</h2>
+            <p className="text-blue-300 text-sm mb-4">Add your website URL in Settings to enable website and social media scanning.</p>
+            <button onClick={() => router.push('/settings')} className="bg-white/20 text-white px-4 py-2 rounded-lg text-sm hover:bg-white/30 transition">
+              ⚙️ Add Website URL
+            </button>
+          </div>
+        )}
+
         {/* Competitor Analysis */}
         {competitors.length > 0 && (
           <div className="bg-white/10 rounded-2xl p-6 mb-6">
@@ -637,12 +729,12 @@ export default function Dashboard() {
             <h2 className="text-white font-bold text-lg mb-4">📊 Your Store Performance</h2>
             <p className="text-blue-300 text-sm mb-4">Based on your last {performance.total} check-ins</p>
             <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-green-400">{performance.busyPct}%</p><p className="text-blue-200 text-sm mt-1">🟢 Busy Days</p></div>
-              <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-yellow-400">{performance.normalPct}%</p><p className="text-blue-200 text-sm mt-1">🟡 Normal Days</p></div>
-              <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-red-400">{performance.slowPct}%</p><p className="text-blue-200 text-sm mt-1">🔴 Slow Days</p></div>
+              <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-green-400">{performance.busyPct}%</p><p className="text-blue-200 text-sm mt-1">🟢 Busy</p></div>
+              <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-yellow-400">{performance.normalPct}%</p><p className="text-blue-200 text-sm mt-1">🟡 Normal</p></div>
+              <div className="bg-white/10 rounded-xl p-4 text-center"><p className="text-3xl font-bold text-red-400">{performance.slowPct}%</p><p className="text-blue-200 text-sm mt-1">🔴 Slow</p></div>
             </div>
             <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-blue-200 text-sm">📅 Your busiest day of the week: <strong className="text-white">{performance.busiestDay}</strong></p>
+              <p className="text-blue-200 text-sm">📅 Your busiest day: <strong className="text-white">{performance.busiestDay}</strong></p>
             </div>
           </div>
         )}
@@ -661,8 +753,8 @@ export default function Dashboard() {
           {showImport && (
             <div className="mt-4">
               <div className="bg-white/10 rounded-xl p-4 mb-4">
-                <p className="text-blue-200 text-sm font-medium mb-2">📋 Required CSV format:</p>
-                <code className="text-green-300 text-xs">date,walkins<br/>2026-05-01,23<br/>2026-05-02,18</code>
+                <p className="text-blue-200 text-sm font-medium mb-2">📋 Required format:</p>
+                <code className="text-green-300 text-xs">date,walkins<br/>2026-05-01,23</code>
               </div>
               <input type="file" accept=".csv" onChange={async (e) => {
                 const file = e.target.files?.[0]
@@ -675,7 +767,7 @@ export default function Dashboard() {
                 if (!session) return
                 const res = await fetch('/api/import-walkins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csvText, userId: session.user.id, storeId: store.id }) })
                 const data = await res.json()
-                setImportResult(data.success ? `✅ Imported ${data.imported} days of walk-in data!` : `❌ Error: ${data.error}`)
+                setImportResult(data.success ? `✅ Imported ${data.imported} days!` : `❌ Error: ${data.error}`)
                 setImporting(false)
               }} className="block w-full text-blue-200 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-blue-900 file:font-semibold hover:file:bg-blue-50 cursor-pointer" />
               {importing && <p className="text-blue-300 text-sm mt-3">Importing...</p>}
@@ -689,7 +781,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-white font-bold text-lg">💰 Import Previous Year Sales</h2>
-              <p className="text-blue-300 text-sm mt-1">Upload last year's daily sales to improve revenue predictions</p>
+              <p className="text-blue-300 text-sm mt-1">Upload last year's daily sales to improve predictions</p>
             </div>
             <button onClick={() => setShowSalesImport(!showSalesImport)} className="bg-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-white/30 transition">
               {showSalesImport ? 'Hide' : 'Upload CSV'}
@@ -698,8 +790,8 @@ export default function Dashboard() {
           {showSalesImport && (
             <div className="mt-4">
               <div className="bg-white/10 rounded-xl p-4 mb-4">
-                <p className="text-blue-200 text-sm font-medium mb-2">📋 Required CSV format:</p>
-                <code className="text-green-300 text-xs">date,revenue<br/>2025-05-01,2450.00<br/>2025-05-02,1820.50</code>
+                <p className="text-blue-200 text-sm font-medium mb-2">📋 Required format:</p>
+                <code className="text-green-300 text-xs">date,revenue<br/>2025-05-01,2450.00</code>
               </div>
               <input type="file" accept=".csv" onChange={async (e) => {
                 const file = e.target.files?.[0]
@@ -712,7 +804,7 @@ export default function Dashboard() {
                 if (!session) return
                 const res = await fetch('/api/import-sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csvText, userId: session.user.id, storeId: store.id }) })
                 const data = await res.json()
-                setSalesImportResult(data.success ? `✅ Imported ${data.imported} days of sales data!` : `❌ Error: ${data.error}`)
+                setSalesImportResult(data.success ? `✅ Imported ${data.imported} days!` : `❌ Error: ${data.error}`)
                 setSalesImporting(false)
               }} className="block w-full text-blue-200 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-blue-900 file:font-semibold hover:file:bg-blue-50 cursor-pointer" />
               {salesImporting && <p className="text-blue-300 text-sm mt-3">Importing...</p>}
@@ -754,11 +846,11 @@ export default function Dashboard() {
               {events.map((event: any, i: number) => (
                 <div key={i} className="bg-white/10 rounded-xl p-4 flex justify-between items-center">
                   <div>
-                    <p className="text-white font-medium">{event.name}</p>
-                    <p className="text-blue-200 text-sm">{event.venue}</p>
+                    <p className="text-white font-medium text-sm">{event.name}</p>
+                    <p className="text-blue-200 text-xs">{event.venue}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-white text-sm font-medium">{event.date}</p>
+                  <div className="text-right ml-4">
+                    <p className="text-white text-xs font-medium">{event.date}</p>
                     <p className="text-blue-300 text-xs">{event.type}</p>
                   </div>
                 </div>
@@ -773,7 +865,7 @@ export default function Dashboard() {
             <h2 className="text-white font-bold text-lg">🤖 AI Traffic Prediction</h2>
             <button onClick={getPrediction} disabled={predicting}
               className="bg-white text-blue-900 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition disabled:opacity-50">
-              {predicting ? 'Analyzing...' : 'Generate Forecast'}
+              {predicting ? 'Analyzing...' : 'Generate'}
             </button>
           </div>
           {prediction ? (
@@ -797,18 +889,18 @@ export default function Dashboard() {
                   hr: () => <hr className="border-white/20 my-3" />,
                 }}>{prediction}</ReactMarkdown>
               </div>
-              <div className="flex gap-3 pt-4 mt-4 border-t border-white/20">
+              <div className="flex gap-3 pt-4 mt-4 border-t border-white/20 flex-wrap">
                 <button onClick={sendEmail} disabled={sending}
                   className="bg-white text-blue-900 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition disabled:opacity-50">
-                  {emailSent ? '✅ Sent!' : sending ? 'Sending...' : '📧 Email Forecast'}
+                  {emailSent ? '✅ Sent!' : sending ? 'Sending...' : '📧 Email'}
                 </button>
                 <button onClick={exportText} className="bg-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-white/30 transition">
-                  📄 Download Forecast
+                  📄 Download
                 </button>
               </div>
             </>
           ) : (
-            <p className="text-blue-300">Click "Generate Forecast" to get your AI-powered weekly prediction and staffing recommendations.</p>
+            <p className="text-blue-300 text-sm">Click "Generate" to get your AI-powered weekly prediction and staffing recommendations.</p>
           )}
         </div>
 
