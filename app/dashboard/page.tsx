@@ -61,6 +61,8 @@ export default function Dashboard() {
   const [metaAdsConnected, setMetaAdsConnected] = useState(false)
   const [websiteScan, setWebsiteScan] = useState<any>(null)
   const [scanningWebsite, setScanningWebsite] = useState(false)
+  const [marketingRecs, setMarketingRecs] = useState<any>(null)
+const [loadingMarketing, setLoadingMarketing] = useState(false)
   const router = useRouter()
 
   const loadStoreData = async (currentStore: any, uid: string) => {
@@ -217,6 +219,19 @@ export default function Dashboard() {
       if (!data.error) setWebsiteScan(data)
     } catch (err) { console.error('Website scan error:', err) }
     setScanningWebsite(false)
+  }
+  const getMarketingRecommendations = async () => {
+    setLoadingMarketing(true)
+    try {
+      const res = await fetch('/api/marketing-recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store, weather, events, demographics, trends, websiteScan, competitorAnalysis, recentLogs })
+      })
+      const data = await res.json()
+      if (!data.error) setMarketingRecs(data)
+    } catch (err) { console.error('Marketing recs error:', err) }
+    setLoadingMarketing(false)
   }
 
   const logTraffic = async (level: string) => {
@@ -858,6 +873,167 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        {/* Marketing Recommendations */}
+<div className="bg-white/10 rounded-2xl p-6 mb-6">
+  <div className="flex justify-between items-center mb-4">
+    <div>
+      <h2 className="text-white font-bold text-lg">📣 Marketing Recommendations</h2>
+      <p className="text-blue-300 text-sm mt-1">AI-powered marketing strategy for your store</p>
+    </div>
+    <button onClick={getMarketingRecommendations} disabled={loadingMarketing}
+      className="bg-white text-blue-900 px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-50 transition disabled:opacity-50">
+      {loadingMarketing ? 'Generating...' : marketingRecs ? '🔄 Refresh' : 'Generate'}
+    </button>
+  </div>
+
+  {marketingRecs ? (
+    <>
+      {/* Headline */}
+      <div className={`rounded-xl p-4 mb-4 ${marketingRecs.urgency === 'high' ? 'bg-green-500/20' : marketingRecs.urgency === 'low' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`}>
+        <p className="text-white font-bold text-lg">{marketingRecs.headline}</p>
+        <p className="text-blue-200 text-sm mt-1">{marketingRecs.summary}</p>
+      </div>
+
+      {/* Quick Wins */}
+      {marketingRecs.quickWins?.length > 0 && (
+        <div className="bg-white/10 rounded-xl p-4 mb-4">
+          <p className="text-blue-300 text-xs font-medium mb-2">⚡ Quick Wins This Week</p>
+          <ul className="flex flex-col gap-1">
+            {marketingRecs.quickWins.map((win: string, i: number) => (
+              <li key={i} className="text-blue-100 text-sm">• {win}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Budget Breakdown */}
+      {marketingRecs.weeklyBudgetBreakdown && (
+        <div className="bg-white/10 rounded-xl p-4 mb-4">
+          <p className="text-blue-300 text-xs font-medium mb-3">💰 Recommended Weekly Budget</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="bg-white/10 rounded-lg p-3 text-center">
+              <p className="text-white font-bold">${marketingRecs.weeklyBudgetBreakdown.googleAds}</p>
+              <p className="text-blue-300 text-xs">Google Ads</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3 text-center">
+              <p className="text-white font-bold">${marketingRecs.weeklyBudgetBreakdown.metaAds}</p>
+              <p className="text-blue-300 text-xs">Meta Ads</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3 text-center">
+              <p className="text-white font-bold">${marketingRecs.weeklyBudgetBreakdown.promotions}</p>
+              <p className="text-blue-300 text-xs">Promotions</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3 text-center">
+              <p className="text-green-400 font-bold">${marketingRecs.weeklyBudgetBreakdown.total}</p>
+              <p className="text-blue-300 text-xs">Total</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Ads */}
+      {marketingRecs.googleAds && (
+        <div className="bg-white/10 rounded-xl p-4 mb-4">
+          <p className="text-blue-300 text-xs font-medium mb-3">🔍 Google Ads Strategy</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <p className="text-blue-300 text-xs">Recommended Budget</p>
+              <p className="text-white font-bold">${marketingRecs.googleAds.recommendedBudget}/day</p>
+            </div>
+            <div>
+              <p className="text-blue-300 text-xs">Est. Cost Per Click</p>
+              <p className="text-white font-bold">{marketingRecs.googleAds.estimatedCPC}</p>
+            </div>
+          </div>
+          <div className="mb-3">
+            <p className="text-blue-300 text-xs mb-1">Top Keywords to Target</p>
+            <div className="flex flex-wrap gap-1">
+              {marketingRecs.googleAds.topKeywords?.map((kw: string, i: number) => (
+                <span key={i} className="bg-white/10 text-blue-200 px-2 py-1 rounded text-xs">{kw}</span>
+              ))}
+            </div>
+          </div>
+          <div className="mb-3">
+            <p className="text-blue-300 text-xs mb-1">Best Days to Run Ads</p>
+            <div className="flex gap-1 flex-wrap">
+              {marketingRecs.googleAds.bestDaysToRun?.map((day: string, i: number) => (
+                <span key={i} className="bg-blue-500/30 text-blue-200 px-2 py-1 rounded text-xs">{day}</span>
+              ))}
+            </div>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3">
+            <p className="text-blue-300 text-xs mb-1">💡 Ad Copy Idea</p>
+            <p className="text-white text-sm font-medium">"{marketingRecs.googleAds.adCopyIdea}"</p>
+          </div>
+        </div>
+      )}
+
+      {/* Meta Ads */}
+      {marketingRecs.metaAds && (
+        <div className="bg-white/10 rounded-xl p-4 mb-4">
+          <p className="text-blue-300 text-xs font-medium mb-3">📘 Facebook & Instagram Strategy</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <p className="text-blue-300 text-xs">Recommended Budget</p>
+              <p className="text-white font-bold">${marketingRecs.metaAds.recommendedBudget}/day</p>
+            </div>
+            <div>
+              <p className="text-blue-300 text-xs">Best Format</p>
+              <p className="text-white font-bold capitalize">{marketingRecs.metaAds.bestFormat}</p>
+            </div>
+          </div>
+          <div className="mb-3">
+            <p className="text-blue-300 text-xs mb-1">Target Audience</p>
+            <p className="text-blue-100 text-sm">{marketingRecs.metaAds.targetAudience}</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3">
+            <p className="text-blue-300 text-xs mb-1">💡 Ad Idea</p>
+            <p className="text-white text-sm font-medium">{marketingRecs.metaAds.adCopyIdea}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Promotions */}
+      {marketingRecs.promotions?.length > 0 && (
+        <div className="bg-white/10 rounded-xl p-4 mb-4">
+          <p className="text-blue-300 text-xs font-medium mb-3">🏷️ Recommended Promotions</p>
+          <div className="flex flex-col gap-3">
+            {marketingRecs.promotions.map((promo: any, i: number) => (
+              <div key={i} className="bg-white/10 rounded-lg p-3">
+                <div className="flex justify-between items-start mb-1">
+                  <p className="text-white font-medium text-sm">{promo.name}</p>
+                  <span className="text-green-400 text-xs font-bold ml-2">{promo.expectedLift}</span>
+                </div>
+                <p className="text-blue-300 text-xs mb-1">{promo.timing}</p>
+                <p className="text-blue-100 text-xs">{promo.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Content Calendar */}
+      {marketingRecs.contentCalendar?.length > 0 && (
+        <div className="bg-white/10 rounded-xl p-4">
+          <p className="text-blue-300 text-xs font-medium mb-3">📅 Content Calendar</p>
+          <div className="flex flex-col gap-2">
+            {marketingRecs.contentCalendar.map((item: any, i: number) => (
+              <div key={i} className="flex gap-3 items-start bg-white/10 rounded-lg p-3">
+                <div className="flex-shrink-0">
+                  <p className="text-white text-xs font-bold">{item.day}</p>
+                  <p className="text-blue-300 text-xs">{item.platform}</p>
+                </div>
+                <p className="text-blue-100 text-xs">{item.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  ) : (
+    <p className="text-blue-300 text-sm">Click "Generate" to get a complete marketing strategy based on your store data, demographics, trends and competitor intelligence.</p>
+  )}
+</div>
 
         {/* AI Prediction */}
         <div className="bg-white/10 rounded-2xl p-6 mb-6">
