@@ -3,6 +3,32 @@ import { useState, useEffect } from 'react'
 import { createClient } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
+function ReviewCard({ review }: { review: any }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = review.text?.length > 150
+  return (
+    <div className="bg-white/10 rounded-lg p-3">
+      <div className="flex justify-between items-center mb-1">
+        <p className="text-white text-xs font-medium">{review.author}</p>
+        <div className="flex gap-0.5">
+          {[1,2,3,4,5].map(star => (
+            <span key={star} className={`text-xs ${star <= review.rating ? 'text-yellow-400' : 'text-white/30'}`}>★</span>
+          ))}
+        </div>
+      </div>
+      <p className="text-blue-200 text-xs">
+        {expanded || !isLong ? review.text : review.text?.substring(0, 150) + '...'}
+      </p>
+      {isLong && (
+        <button onClick={() => setExpanded(!expanded)}
+          className="text-blue-400 text-xs mt-1 hover:text-white transition">
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
+      <p className="text-blue-400 text-xs mt-1">{review.time}</p>
+    </div>
+  )
+}
 
 const WEATHER_CODES: Record<number, string> = {
   0: '☀️ Clear', 1: '🌤️ Mainly Clear', 2: '⛅ Partly Cloudy', 3: '☁️ Overcast',
@@ -681,18 +707,7 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
             <p className="text-red-400 text-xs font-medium mb-2">🚨 Recent Negative Reviews to Address</p>
             <div className="flex flex-col gap-2">
               {reviews.recentNegative.map((review: any, i: number) => (
-                <div key={i} className="bg-white/10 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-white text-xs font-medium">{review.author}</p>
-                    <div className="flex gap-0.5">
-                      {[1,2,3,4,5].map(star => (
-                        <span key={star} className={`text-xs ${star <= review.rating ? 'text-yellow-400' : 'text-white/30'}`}>★</span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-blue-200 text-xs">{review.text}</p>
-                  <p className="text-blue-400 text-xs mt-1">{review.time}</p>
-                </div>
+                <ReviewCard key={i} review={review} />
               ))}
             </div>
           </div>
@@ -703,18 +718,7 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
             <p className="text-green-400 text-xs font-medium mb-2">🌟 Recent Positive Reviews</p>
             <div className="flex flex-col gap-2">
               {reviews.recentPositive.map((review: any, i: number) => (
-                <div key={i} className="bg-white/10 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-white text-xs font-medium">{review.author}</p>
-                    <div className="flex gap-0.5">
-                      {[1,2,3,4,5].map(star => (
-                        <span key={star} className={`text-xs ${star <= review.rating ? 'text-yellow-400' : 'text-white/30'}`}>★</span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-blue-200 text-xs">{review.text}</p>
-                  <p className="text-blue-400 text-xs mt-1">{review.time}</p>
-                </div>
+                <ReviewCard key={i} review={review} />
               ))}
             </div>
           </div>
