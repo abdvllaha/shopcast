@@ -115,8 +115,22 @@ Create a complete marketing strategy. Respond with ONLY this JSON:
       return Response.json({ error: 'Could not generate recommendations' }, { status: 500 })
     }
 
+    const stripCites = (text) => text?.replace(/<cite[^>]*>|<\/cite>/g, '') || ''
+    
+    const stripObject = (obj) => {
+      if (typeof obj === 'string') return stripCites(obj)
+      if (Array.isArray(obj)) return obj.map(stripObject)
+      if (typeof obj === 'object' && obj !== null) {
+        const result = {}
+        for (const key in obj) result[key] = stripObject(obj[key])
+        return result
+      }
+      return obj
+    }
+
     const parsed = JSON.parse(jsonMatch[0])
-    return Response.json(parsed)
+    const cleaned = stripObject(parsed)
+    return Response.json(cleaned)
 
   } catch (err) {
     console.error('Marketing recommendations error:', err.message)
