@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
   const { data: allSales } = await salesQuery
 
-  let yoyData = null
+  let yoyData: any = null
   if (allSales && allSales.length > 0) {
     const thisWeekSales = allSales.filter(s => 
       s.sale_date >= formatDate(thisWeekStart) && s.sale_date <= formatDate(thisWeekEnd)
