@@ -123,6 +123,8 @@ export default function Login() {
               <Link href="/signup" className="text-blue-600 font-medium hover:underline">Sign up free</Link>
               <p className="text-center text-gray-400 text-xs mt-4">
   By continuing you agree to our{' '}
+  <Link href="/terms" className="text-blue-500 hover:underline">Terms of Service</Link>
+  {' '}and{' '}
   <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>
 </p>
             </p>

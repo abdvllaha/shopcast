@@ -77,12 +77,14 @@ export default function SignUp() {
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSignUp()}
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="you@example.com" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSignUp()}
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Min. 6 characters" />
           </div>
@@ -95,6 +97,12 @@ export default function SignUp() {
         <p className="text-center text-gray-500 text-sm mt-6">
           Already have an account?{' '}
           <Link href="/login" className="text-blue-600 font-medium hover:underline">Log in</Link>
+        </p>
+        <p className="text-center text-gray-400 text-xs mt-4">
+          By continuing you agree to our{' '}
+          <Link href="/terms" className="text-blue-500 hover:underline">Terms of Service</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>
         </p>
       </div>
     </main>
