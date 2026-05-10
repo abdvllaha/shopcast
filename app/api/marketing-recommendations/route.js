@@ -1,5 +1,6 @@
 export async function POST(request) {
   const { store, weather, events, demographics, trends, websiteScan, competitorAnalysis, recentLogs } = await request.json()
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
   const weatherSummary = weather?.daily?.time?.slice(0, 7).map((date, i) => {
     const max = Math.round(weather.daily.temperature_2m_max[i])
@@ -28,7 +29,8 @@ export async function POST(request) {
           content: `You are a senior marketing strategist for retail businesses. Search for current Google Ads keyword costs and Facebook ad benchmarks for "${store.store_type}" retailers in ${store.city}, Canada.
 
 Then create a comprehensive marketing action plan using ALL of this data:
-
+TODAY'S DATE: ${today}
+Use this exact date to calculate all day names correctly. Do not guess what day of the week any date falls on — calculate it from today's date.
 STORE: ${store.store_name}
 TYPE: ${store.store_type}
 CITY: ${store.city}

@@ -21,7 +21,7 @@ export async function POST(request) {
     : 'No previous sales data uploaded yet'
 
   const prompt = `You are ShopCast, an AI assistant for small retail stores. Analyze the following data and provide a complete weekly action plan.
-
+Today's date is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
 Store: ${store.store_name}
 Store Description: ${store.store_type}
 City: ${store.city}
