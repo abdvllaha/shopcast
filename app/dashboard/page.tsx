@@ -737,6 +737,37 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
             )}
           </div>
         )}
+        {/* Year-over-Year */}
+{/* @ts-ignore */}
+{performance?.yoy && (
+  <div className="bg-white/10 rounded-2xl p-6 mb-6">
+    <h2 className="text-white font-bold text-lg mb-4">📅 Year-over-Year</h2>
+    <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="bg-white/10 rounded-xl p-4">
+        <p className="text-blue-300 text-xs font-medium mb-1">This Week vs Last Year</p>
+        <p className="text-white text-2xl font-bold">${performance.yoy.thisWeek.toLocaleString()}</p>
+        <div className="flex items-center gap-1 mt-1">
+          <span className={`text-sm font-bold ${performance.yoy.isUp ? 'text-green-400' : 'text-red-400'}`}>
+            {performance.yoy.isUp ? '↑' : '↓'} {Math.abs(performance.yoy.changePercent)}%
+          </span>
+          <span className="text-blue-300 text-xs">vs ${performance.yoy.lastYear.toLocaleString()} last year</span>
+        </div>
+      </div>
+      {performance.yoy.monthChangePercent !== undefined && (
+        <div className="bg-white/10 rounded-xl p-4">
+          <p className="text-blue-300 text-xs font-medium mb-1">Last 4 Weeks vs Last Year</p>
+          <p className="text-white text-2xl font-bold">${performance.yoy.recentTotal?.toLocaleString()}</p>
+          <div className="flex items-center gap-1 mt-1">
+            <span className={`text-sm font-bold ${performance.yoy.monthIsUp ? 'text-green-400' : 'text-red-400'}`}>
+              {performance.yoy.monthIsUp ? '↑' : '↓'} {Math.abs(performance.yoy.monthChangePercent)}%
+            </span>
+            <span className="text-blue-300 text-xs">vs ${performance.yoy.lastYearRecentTotal?.toLocaleString()} last year</span>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
         {/* Performance Report */}
         {performance && (
