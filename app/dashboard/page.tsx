@@ -719,7 +719,27 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
             </div>
           </div>
         )}
+{reviews.areasToImprove?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <p className="text-yellow-400 text-xs font-medium mb-2">🔧 Areas to Improve</p>
+            <ul className="flex flex-col gap-1">
+              {reviews.areasToImprove.map((area: string, i: number) => (
+                <li key={i} className="text-blue-100 text-xs">• {area}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
+        {reviews.customerSuggestions?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <p className="text-blue-300 text-xs font-medium mb-2">💡 What Customers Are Asking For</p>
+            <ul className="flex flex-col gap-1">
+              {reviews.customerSuggestions.map((suggestion: string, i: number) => (
+                <li key={i} className="text-blue-100 text-xs">• {suggestion}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {reviews.googleMapsUrl && (
           <a href={reviews.googleMapsUrl} target="_blank" rel="noopener noreferrer"
             className="block text-center text-blue-300 text-xs hover:text-white transition mt-2">

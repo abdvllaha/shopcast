@@ -63,7 +63,23 @@ export async function GET(request) {
     
     let commonPraise = []
     let commonComplaints = []
+    let areasToImprove = []
+    let customerSuggestions = []
     let summary = ''
+    return Response.json({
+      googleRating: details.rating,
+      totalReviews: details.user_ratings_total,
+      placeId,
+      googleMapsUrl: details.url,
+      recentPositive: positiveReviews,
+      recentNegative: negativeReviews,
+      commonPraise,
+      commonComplaints,
+      areasToImprove,
+      customerSuggestions,
+      alertLevel,
+      summary: summary || `${storeName} has a ${details.rating} star rating based on ${details.user_ratings_total} Google reviews.`
+    })
 
     if (reviews.length > 0) {
       const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -86,6 +102,8 @@ Respond with ONLY this JSON:
 {
   "commonPraise": ["what customers love 1", "what customers love 2", "what customers love 3"],
   "commonComplaints": ["common complaint 1", "common complaint 2", "common complaint 3"],
+  "areasToImprove": ["specific improvement 1", "specific improvement 2", "specific improvement 3"],
+  "customerSuggestions": ["specific thing customers have asked for 1", "specific thing customers have asked for 2"],
   "summary": "2 sentence summary of the store's reputation and what to improve"
 }`
           }]
@@ -98,8 +116,10 @@ Respond with ONLY this JSON:
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         commonPraise = parsed.commonPraise || []
-        commonComplaints = parsed.commonComplaints || []
-        summary = parsed.summary || ''
+          commonComplaints = parsed.commonComplaints || []
+          areasToImprove = parsed.areasToImprove || []
+          customerSuggestions = parsed.customerSuggestions || []
+          summary = parsed.summary || ''
       }
     }
 
