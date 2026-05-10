@@ -121,6 +121,10 @@ export default function Login() {
             <p className="text-center text-gray-500 text-sm mt-6">
               Don't have an account?{' '}
               <Link href="/signup" className="text-blue-600 font-medium hover:underline">Sign up free</Link>
+              <p className="text-center text-gray-400 text-xs mt-4">
+  By continuing you agree to our{' '}
+  <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>
+</p>
             </p>
           </>
         ) : (
