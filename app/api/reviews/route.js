@@ -38,7 +38,7 @@ export async function GET(request) {
       .slice(0, 3)
       .map(r => ({
         rating: r.rating,
-        text: r.text?.substring(0, 150) || '',
+        text: r.text?.substring(0, 300) || '',
         author: r.author_name,
         time: r.relative_time_description
       }))
@@ -48,7 +48,7 @@ export async function GET(request) {
       .slice(0, 3)
       .map(r => ({
         rating: r.rating,
-        text: r.text?.substring(0, 150) || '',
+        text: r.text?.substring(0, 300) || '',
         author: r.author_name,
         time: r.relative_time_description
       }))
