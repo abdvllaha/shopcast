@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 function ReviewCard({ review }: { review: any }) {
   const [expanded, setExpanded] = useState(false)
-  const isLong = review.text?.length > 150
+  const isLong = review.text?.length > 200
   return (
     <div className="bg-white/10 rounded-lg p-3">
       <div className="flex justify-between items-center mb-1">
@@ -17,7 +17,7 @@ function ReviewCard({ review }: { review: any }) {
         </div>
       </div>
       <p className="text-blue-200 text-xs">
-        {expanded || !isLong ? review.text : review.text?.substring(0, 150) + '...'}
+        {expanded || !isLong ? review.text : review.text?.substring(0, 200) + '...'}
       </p>
       {isLong && (
         <button onClick={() => setExpanded(!expanded)}
