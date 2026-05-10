@@ -8,9 +8,9 @@ const PLANS = [
   {
     name: 'Starter',
     price: 49,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID,
+    priceId: 'price_1TVgP1EBcQAh7Mqh1D0FHR4j',
     description: 'Perfect for single-location retailers getting started with AI forecasting',
-    color: 'blue',
+    popular: false,
     features: [
       '✅ AI weekly foot traffic forecast',
       '✅ 7-day weather integration',
@@ -34,9 +34,8 @@ const PLANS = [
   {
     name: 'Growth',
     price: 99,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_GROWTH_PRICE_ID,
+    priceId: 'price_1TVgP0EBcQAh7MqhHmSvZe5P',
     description: 'The complete retail intelligence platform for serious store owners',
-    color: 'indigo',
     popular: true,
     features: [
       '✅ Everything in Starter',
@@ -57,9 +56,9 @@ const PLANS = [
   {
     name: 'Pro',
     price: 199,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
+    priceId: 'price_1TVgP0EBcQAh7MqhJLw7GooX',
     description: 'For retailers with multiple locations or franchise operations',
-    color: 'purple',
+    popular: false,
     features: [
       '✅ Everything in Growth',
       '✅ Up to 5 store locations',
@@ -75,6 +74,7 @@ const PLANS = [
 export default function Pricing() {
   const [loading, setLoading] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [error, setError] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -93,6 +93,7 @@ export default function Pricing() {
     }
 
     setLoading(plan.name)
+    setError('')
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -104,9 +105,13 @@ export default function Pricing() {
         })
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-    } catch (err) {
-      console.error('Checkout error:', err)
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error || 'Something went wrong')
+      }
+    } catch (err: any) {
+      setError(err.message)
     }
     setLoading(null)
   }
@@ -124,17 +129,18 @@ export default function Pricing() {
             Simple, transparent pricing
           </h1>
           <p className="text-blue-200 text-xl max-w-2xl mx-auto">
-            Start your 14-day free trial today. No credit card required to start — cancel anytime.
+            Start your 14-day free trial today. A credit card is required to start — you won't be charged until day 15.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 bg-green-500/20 text-green-300 px-4 py-2 rounded-full text-sm font-medium">
-            🎉 14-day free trial on all plans
+            🎉 14-day free trial — cancel before day 15 and pay nothing
           </div>
+          {error && <div className="mt-4 bg-red-500/20 text-red-300 rounded-lg p-3 text-sm">{error}</div>}
         </div>
 
         {/* Plans */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {PLANS.map(plan => (
-            <div key={plan.name} className={`relative bg-white/10 rounded-2xl p-8 ${plan.popular ? 'ring-2 ring-white scale-105' : ''}`}>
+            <div key={plan.name} className={`relative bg-white/10 rounded-2xl p-8 ${plan.popular ? 'ring-2 ring-white md:scale-105' : ''}`}>
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-blue-900 text-xs font-bold px-4 py-1 rounded-full">
                   MOST POPULAR
@@ -150,7 +156,7 @@ export default function Pricing() {
                 onClick={() => handleSubscribe(plan)}
                 disabled={loading === plan.name}
                 className={`w-full py-3 rounded-xl font-semibold text-sm transition mb-8 disabled:opacity-50 ${plan.popular ? 'bg-white text-blue-900 hover:bg-blue-50' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-                {loading === plan.name ? 'Loading...' : 'Start Free Trial'}
+                {loading === plan.name ? 'Loading...' : user ? 'Start Free Trial' : 'Sign Up to Start'}
               </button>
               <ul className="flex flex-col gap-2">
                 {plan.features.map((feature, i) => (
@@ -168,10 +174,10 @@ export default function Pricing() {
           <h2 className="text-white text-2xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
-              { q: 'Do I need a credit card to start?', a: 'Yes — we require a card to start your free trial. You will not be charged until day 15. Cancel anytime before then.' },
-              { q: 'Can I switch plans?', a: 'Yes — you can upgrade or downgrade at any time. Changes take effect immediately and are prorated.' },
+              { q: 'Do I need a credit card to start?', a: 'Yes — a card is required to start your free trial. You will not be charged until day 15. Cancel anytime before then and pay nothing.' },
+              { q: 'Can I switch plans?', a: 'Yes — upgrade or downgrade at any time. Changes take effect immediately and are prorated.' },
               { q: 'What happens after the trial?', a: 'After 14 days your card is charged for the plan you selected. You\'ll receive an email reminder before the trial ends.' },
-              { q: 'Can I cancel anytime?', a: 'Yes — cancel anytime from your account settings. No cancellation fees. Your access continues until the end of your billing period.' },
+              { q: 'Can I cancel anytime?', a: 'Yes — cancel anytime from your account settings. No cancellation fees. Access continues until end of billing period.' },
               { q: 'What stores is ShopCast best for?', a: 'ShopCast works best for single-location physical retailers doing $500K+ in annual revenue — furniture, clothing, home goods, sporting goods, and specialty retail.' },
               { q: 'Is my data secure?', a: 'Yes — all data is encrypted in transit and at rest. We never sell your data. See our Privacy Policy for full details.' },
             ].map((faq, i) => (
