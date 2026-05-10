@@ -60,6 +60,7 @@ export async function GET(request) {
 
     // Use Claude to analyze the reviews and find patterns
     const reviewTexts = reviews.map(r => `${r.rating}★: ${r.text?.substring(0, 100)}`).join('\n')
+    console.log('Review count:', reviews.length, 'Text sample:', reviewTexts.substring(0, 200))
     
     let commonPraise = []
     let commonComplaints = []
