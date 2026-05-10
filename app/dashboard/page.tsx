@@ -61,6 +61,8 @@ export default function Dashboard() {
   const [metaAdsConnected, setMetaAdsConnected] = useState(false)
   const [websiteScan, setWebsiteScan] = useState<any>(null)
   const [scanningWebsite, setScanningWebsite] = useState(false)
+  const [reviews, setReviews] = useState<any>(null)
+const [loadingReviews, setLoadingReviews] = useState(false)
   const [marketingRecs, setMarketingRecs] = useState<any>(null)
 const [loadingMarketing, setLoadingMarketing] = useState(false)
   const router = useRouter()
@@ -157,6 +159,7 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
     setTrends(null)
     setDemographics(null)
     setWebsiteScan(null)
+    setReviews(null)
     await loadStoreData(newStore, userId)
   }
 
@@ -219,6 +222,16 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
       if (!data.error) setWebsiteScan(data)
     } catch (err) { console.error('Website scan error:', err) }
     setScanningWebsite(false)
+  }
+  const loadReviews = async () => {
+    if (!store) return
+    setLoadingReviews(true)
+    try {
+      const res = await fetch(`/api/reviews?storeName=${encodeURIComponent(store.store_name)}&city=${encodeURIComponent(store.city)}&address=${encodeURIComponent(store.address)}`)
+      const data = await res.json()
+      if (!data.error) setReviews(data)
+    } catch (err) { console.error('Reviews error:', err) }
+    setLoadingReviews(false)
   }
   const getMarketingRecommendations = async () => {
     setLoadingMarketing(true)
@@ -603,6 +616,93 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
             </button>
           </div>
         )}
+        {/* Google Reviews */}
+<div className="bg-white/10 rounded-2xl p-6 mb-6">
+  <div className="flex justify-between items-center mb-4">
+    <div>
+      <h2 className="text-white font-bold text-lg">⭐ Google Reviews</h2>
+      <p className="text-blue-300 text-sm mt-1">Monitor your online reputation</p>
+    </div>
+    <button onClick={loadReviews} disabled={loadingReviews}
+      className="bg-white/20 text-white px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition disabled:opacity-50">
+      {loadingReviews ? 'Loading...' : reviews ? '🔄 Refresh' : 'Load Reviews'}
+    </button>
+  </div>
+
+  {reviews ? (
+    <>
+      {/* Rating */}
+      <div className={`rounded-xl p-4 mb-4 flex items-center gap-4 ${reviews.alertLevel === 'critical' ? 'bg-red-500/20' : reviews.alertLevel === 'warning' ? 'bg-yellow-500/20' : 'bg-green-500/20'}`}>
+        <div className="text-center">
+          <p className="text-white text-4xl font-bold">{reviews.googleRating}</p>
+          <div className="flex gap-0.5 mt-1">
+            {[1,2,3,4,5].map(star => (
+              <span key={star} className={`text-lg ${star <= Math.round(reviews.googleRating) ? 'text-yellow-400' : 'text-white/30'}`}>★</span>
+            ))}
+          </div>
+          <p className="text-blue-300 text-xs mt-1">{reviews.totalReviews} reviews</p>
+        </div>
+        <div className="flex-1">
+          <p className={`text-sm font-bold mb-1 ${reviews.alertLevel === 'critical' ? 'text-red-400' : reviews.alertLevel === 'warning' ? 'text-yellow-400' : 'text-green-400'}`}>
+            {reviews.alertLevel === 'critical' ? '🚨 Needs Immediate Attention' : reviews.alertLevel === 'warning' ? '⚠️ Some Issues to Address' : '✅ Good Reputation'}
+          </p>
+          <p className="text-blue-100 text-sm">{reviews.summary}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {/* What customers love */}
+        {reviews.commonPraise?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4">
+            <p className="text-green-400 text-xs font-medium mb-2">👍 What Customers Love</p>
+            <ul className="flex flex-col gap-1">
+              {reviews.commonPraise.map((praise: string, i: number) => (
+                <li key={i} className="text-blue-100 text-xs">• {praise}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Common complaints */}
+        {reviews.commonComplaints?.length > 0 && (
+          <div className="bg-white/10 rounded-xl p-4">
+            <p className="text-red-400 text-xs font-medium mb-2">👎 Common Complaints</p>
+            <ul className="flex flex-col gap-1">
+              {reviews.commonComplaints.map((complaint: string, i: number) => (
+                <li key={i} className="text-blue-100 text-xs">• {complaint}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Recent reviews */}
+      {reviews.recentNegative?.length > 0 && (
+        <div className="bg-red-500/10 rounded-xl p-4 mb-4">
+          <p className="text-red-400 text-xs font-medium mb-2">🚨 Recent Negative Reviews to Address</p>
+          <ul className="flex flex-col gap-1">
+            {reviews.recentNegative.map((review: string, i: number) => (
+              <li key={i} className="text-blue-100 text-xs">• {review}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {reviews.recentPositive?.length > 0 && (
+        <div className="bg-green-500/10 rounded-xl p-4">
+          <p className="text-green-400 text-xs font-medium mb-2">🌟 Recent Positive Reviews</p>
+          <ul className="flex flex-col gap-1">
+            {reviews.recentPositive.map((review: string, i: number) => (
+              <li key={i} className="text-blue-100 text-xs">• {review}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  ) : (
+    <p className="text-blue-300 text-sm">Click "Load Reviews" to see your Google review rating, recent feedback, and reputation alerts.</p>
+  )}
+</div>
 
         {/* Competitor Analysis */}
         {competitors.length > 0 && (
