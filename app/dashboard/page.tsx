@@ -676,28 +676,56 @@ const [loadingMarketing, setLoadingMarketing] = useState(false)
         )}
       </div>
 
-      {/* Recent reviews */}
-      {reviews.recentNegative?.length > 0 && (
-        <div className="bg-red-500/10 rounded-xl p-4 mb-4">
-          <p className="text-red-400 text-xs font-medium mb-2">🚨 Recent Negative Reviews to Address</p>
-          <ul className="flex flex-col gap-1">
-            {reviews.recentNegative.map((review: string, i: number) => (
-              <li key={i} className="text-blue-100 text-xs">• {review}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+{reviews.recentNegative?.length > 0 && (
+          <div className="bg-red-500/10 rounded-xl p-4 mb-4">
+            <p className="text-red-400 text-xs font-medium mb-2">🚨 Recent Negative Reviews to Address</p>
+            <div className="flex flex-col gap-2">
+              {reviews.recentNegative.map((review: any, i: number) => (
+                <div key={i} className="bg-white/10 rounded-lg p-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-white text-xs font-medium">{review.author}</p>
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(star => (
+                        <span key={star} className={`text-xs ${star <= review.rating ? 'text-yellow-400' : 'text-white/30'}`}>★</span>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-blue-200 text-xs">{review.text}</p>
+                  <p className="text-blue-400 text-xs mt-1">{review.time}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {reviews.recentPositive?.length > 0 && (
-        <div className="bg-green-500/10 rounded-xl p-4">
-          <p className="text-green-400 text-xs font-medium mb-2">🌟 Recent Positive Reviews</p>
-          <ul className="flex flex-col gap-1">
-            {reviews.recentPositive.map((review: string, i: number) => (
-              <li key={i} className="text-blue-100 text-xs">• {review}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {reviews.recentPositive?.length > 0 && (
+          <div className="bg-green-500/10 rounded-xl p-4 mb-4">
+            <p className="text-green-400 text-xs font-medium mb-2">🌟 Recent Positive Reviews</p>
+            <div className="flex flex-col gap-2">
+              {reviews.recentPositive.map((review: any, i: number) => (
+                <div key={i} className="bg-white/10 rounded-lg p-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-white text-xs font-medium">{review.author}</p>
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(star => (
+                        <span key={star} className={`text-xs ${star <= review.rating ? 'text-yellow-400' : 'text-white/30'}`}>★</span>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-blue-200 text-xs">{review.text}</p>
+                  <p className="text-blue-400 text-xs mt-1">{review.time}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {reviews.googleMapsUrl && (
+          <a href={reviews.googleMapsUrl} target="_blank" rel="noopener noreferrer"
+            className="block text-center text-blue-300 text-xs hover:text-white transition mt-2">
+            View all reviews on Google Maps →
+          </a>
+        )}
     </>
   ) : (
     <p className="text-blue-300 text-sm">Click "Load Reviews" to see your Google review rating, recent feedback, and reputation alerts.</p>
