@@ -439,7 +439,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <p className="text-yellow-300 font-medium text-sm">⏳ Free Trial — {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''} remaining</p>
-                  <p className="text-yellow-200 text-xs mt-1">Your card will be charged after your trial ends.</p>
+                  
                 </>
               )}
             </div>
