@@ -428,6 +428,23 @@ export default function Settings() {
             </div>
           )}
         </div>
+        {/* Subscription */}
+<div className="bg-white rounded-2xl p-8 shadow-2xl mb-6">
+  <h2 className="text-xl font-bold text-blue-900 mb-2">💳 Subscription</h2>
+  <p className="text-gray-500 mb-6">Manage your ShopCast subscription and billing</p>
+  <button onClick={async () => {
+    const res = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+  }} className="block w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition text-center">
+    Manage Subscription & Billing
+  </button>
+  <p className="text-gray-400 text-xs mt-3 text-center">You'll be taken to a secure Stripe portal to manage your plan, update payment, or cancel.</p>
+</div>
 
       </div>
     </main>

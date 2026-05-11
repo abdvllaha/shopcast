@@ -18,6 +18,26 @@ export default function Setup() {
       setError('Please fill in all fields')
       return
     }
+
+    // Check if user has Pro access before adding another store
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { router.push('/login'); return }
+
+    const createdAt = session.user.created_at || ''
+    const grandfathered = createdAt < '2026-05-10'
+
+    const { data: existingStores } = await supabase
+      .from('stores').select('id').eq('user_id', session.user.id)
+
+    if (existingStores && existingStores.length > 0 && !grandfathered) {
+      const { data: sub } = await supabase
+        .from('subscriptions').select('plan, status').eq('user_id', session.user.id).single()
+      const hasPro = sub?.plan === 'pro' || sub?.status === 'trialing'
+      if (!hasPro) {
+        router.push('/pricing')
+        return
+      }
+    }
     setLoading(true)
     setError('')
 
