@@ -38,47 +38,50 @@ export async function POST(request: Request) {
       const subscriptionId = session.subscription as string
 
       if (userId && subscriptionId) {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
-        const priceId = subscription.items.data[0].price.id
+        const sub = await stripe.subscriptions.retrieve(subscriptionId) as any
+        const priceId = sub.items.data[0].price.id
 
         await supabase.from('subscriptions').upsert({
           user_id: userId,
           stripe_subscription_id: subscriptionId,
           stripe_customer_id: session.customer,
           plan: getPlan(priceId),
-          status: subscription.status,
-          trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-          current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null
+          status: sub.status,
+          trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+          current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          cancel_at: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null
         }, { onConflict: 'user_id' })
       }
       break
     }
 
     case 'customer.subscription.updated': {
-      const subscription = event.data.object as any
-      const userId = subscription.metadata?.userId
-      const priceId = subscription.items.data[0].price.id
+      const sub = event.data.object as any
+      const userId = sub.metadata?.userId
+      const priceId = sub.items.data[0].price.id
 
       if (userId) {
         await supabase.from('subscriptions').upsert({
           user_id: userId,
-          stripe_subscription_id: subscription.id,
+          stripe_subscription_id: sub.id,
           plan: getPlan(priceId),
-          status: subscription.status,
-          trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-          current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null
+          status: sub.status,
+          trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+          current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          cancel_at: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null
         }, { onConflict: 'user_id' })
       }
       break
     }
 
     case 'customer.subscription.deleted': {
-      const subscription = event.data.object as any
-      const userId = subscription.metadata?.userId
+      const sub = event.data.object as any
+      const userId = sub.metadata?.userId
 
       if (userId) {
         await supabase.from('subscriptions').update({
-          status: 'canceled'
+          status: 'canceled',
+          cancel_at: null
         }).eq('user_id', userId)
       }
       break

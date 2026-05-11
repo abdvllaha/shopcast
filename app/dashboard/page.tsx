@@ -431,11 +431,20 @@ export default function Dashboard() {
         {!isGrandfathered && subscription?.status === 'trialing' && trialDaysLeft !== null && (
           <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-4 mb-6 flex justify-between items-center">
             <div>
-              <p className="text-yellow-300 font-medium text-sm">⏳ Free Trial — {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''} remaining</p>
-              <p className="text-yellow-200 text-xs mt-1">Your card will be charged after your trial ends.</p>
+              {(subscription as any)?.cancel_at ? (
+                <>
+                  <p className="text-yellow-300 font-medium text-sm">⚠️ Subscription cancelled — access ends in {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}</p>
+                  <p className="text-yellow-200 text-xs mt-1">Resubscribe to keep your access.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-yellow-300 font-medium text-sm">⏳ Free Trial — {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''} remaining</p>
+                  <p className="text-yellow-200 text-xs mt-1">Your card will be charged after your trial ends.</p>
+                </>
+              )}
             </div>
             <Link href="/pricing" className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-yellow-300 transition">
-              Manage Plan
+              {(subscription as any)?.cancel_at ? 'Resubscribe' : 'Manage Plan'}
             </Link>
           </div>
         )}
