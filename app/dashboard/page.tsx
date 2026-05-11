@@ -477,10 +477,17 @@ export default function Dashboard() {
                   </button>
                 ))}
                 <div className="border-t border-gray-100 mt-2 pt-2">
-                  <button onClick={() => { setShowStoreSwitcher(false); router.push('/setup') }}
-                    className="w-full text-left px-4 py-3 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition font-medium">
-                    + Add New Store
-                  </button>
+                  {hasProAccess ? (
+                    <button onClick={() => { setShowStoreSwitcher(false); router.push('/setup') }}
+                      className="w-full text-left px-4 py-3 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition font-medium">
+                      + Add New Store
+                    </button>
+                  ) : (
+                    <div className="px-4 py-3 border-t border-gray-100">
+                      <p className="text-gray-400 text-xs mb-1">Multi-store is a Pro feature</p>
+                      <a href="/pricing" className="text-blue-600 text-xs font-medium hover:underline">Upgrade to Pro →</a>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
