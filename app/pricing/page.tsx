@@ -34,7 +34,7 @@ const PLANS = [
   {
     name: 'Growth',
     price: 99,
-    priceId: 'price_1TVgP0EBcQAh7MqhHmSvZe5P',
+    priceId: 'price_1TVi5LEBcQAh7Mqh8IKVWFol',
     description: 'The complete retail intelligence platform for serious store owners',
     popular: true,
     features: [
