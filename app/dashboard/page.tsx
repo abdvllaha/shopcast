@@ -173,6 +173,14 @@ export default function Dashboard() {
         // Check if grandfathered (signed up before cutoff)
         const grandfathered = createdAt < GRANDFATHERED_CUTOFF
         setIsGrandfathered(grandfathered)
+        if (!grandfathered) {
+          const { data: subCheck } = await supabase
+            .from('subscriptions').select('status').eq('user_id', session.user.id).single()
+          if (!subCheck) {
+            router.push('/pricing')
+            return
+          }
+        }
 
         // Load subscription
         const { data: sub } = await supabase

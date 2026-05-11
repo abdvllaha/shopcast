@@ -20,21 +20,21 @@ export default function SignUp() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/setup')
+      router.push('/pricing')
     }
   }
 
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/setup` }
+      options: { redirectTo: `${window.location.origin}/pricing` }
     })
   }
 
   const handleFacebookLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
-      options: { redirectTo: `${window.location.origin}/setup` }
+      options: { redirectTo: `${window.location.origin}/pricing` }
     })
   }
 
